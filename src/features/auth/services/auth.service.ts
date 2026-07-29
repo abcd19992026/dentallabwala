@@ -68,20 +68,14 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
     throw new Error(`Database Error (${error.code || status}): ${error.message}`)
   }
 
-<<<<<<< HEAD
   const labRow: any = Array.isArray(data.labs)
     ? data.labs[0]
     : data.labs
+
   if (
     data.role === 'lab_user' &&
     labRow &&
     labRow.is_active === false
-=======
-  if (
-    data.role === 'lab_user' &&
-    data.labs &&
-    data.labs.is_active === false
->>>>>>> 70803d7112456db98fd52bc3323c4f341225b889
   ) {
     throw new Error(
       `Your account is inactive. Please contact administrator.`
