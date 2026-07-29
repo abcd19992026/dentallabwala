@@ -1,0 +1,245 @@
+import { useState, useEffect } from 'react'
+import type { FieldConfig } from '../types/templateConfig.types'
+import { DEFAULT_FIELD_CONFIGS, FIELD_KEYS } from '../types/templateConfig.types'
+
+interface WarrantyCardPrintLayoutProps {
+  mode: 'main' | 'custom'
+  clinicName?: string
+  cardData: {
+    serialNo: number
+    labDentist: string
+    patientName: string
+    toothNo: string
+    regNo: string
+    warranty: string
+    validTill: string
+    authorisedCode: string
+    clinicName: string
+  }
+  labDetails: {
+    labName: string
+    address: string
+  }
+  templates: {
+    frontUrl: string
+    backUrl: string
+  }
+  /** Optional saved field configurations — overrides DEFAULT_FIELD_CONFIGS */
+  fieldConfigs?: Record<string, FieldConfig>
+  /** Optional saved field configurations for the back face */
+  backFieldConfigs?: Record<string, FieldConfig>
+  /** When true, renders only the front face (used by configurator) */
+  singleFace?: boolean
+}
+
+function useSvgWithReplacement(url: string, replacements: Record<string, string>) {
+  const [content, setContent] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!url || !url.toLowerCase().endsWith('.svg')) {
+      setContent(null)
+      return
+    }
+    let cancelled = false
+    fetch(url)
+      .then((r) => r.text())
+      .then((text) => {
+        if (cancelled) return
+        let modified = text
+        for (const [key, val] of Object.entries(replacements)) {
+          modified = modified.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val)
+        }
+        setContent(modified)
+      })
+      .catch(() => setContent(null))
+    return () => { cancelled = true }
+  }, [url, JSON.stringify(replacements)])
+
+  return content
+}
+
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    const [y, m, d] = parts
+    return `${d}.${m}.${y.slice(-2)}`
+  }
+  return dateStr
+}
+
+function formatWarranty(val: string): string {
+  const n = Number(val)
+  return n > 0 ? `${val} Year${n > 1 ? 's' : ''}` : val
+}
+
+function fieldStyle(cfg: { left: number; top: number; fontSize: number; bold: boolean; width: number }) {
+  return {
+    position: 'absolute' as const,
+    left: `${cfg.left}px`,
+    top: `${cfg.top}px`,
+    fontSize: `${cfg.fontSize}px`,
+    fontWeight: cfg.bold ? 700 : 400,
+    color: '#111',
+    whiteSpace: 'nowrap' as const,
+    width: `${cfg.width}px`,
+    // 👇 ADD THESE
+    lineHeight: '1',
+    display: 'block',
+    margin: 0,
+    padding: 0,
+  }
+}
+
+function getMerged(fieldConfigs: Record<string, FieldConfig> | undefined, key: string) {
+  const saved = fieldConfigs?.[key]
+  const def = DEFAULT_FIELD_CONFIGS[key]
+  return {
+    left: saved?.left ?? def.left,
+    top: saved?.top ?? def.top,
+    fontSize: saved?.fontSize ?? def.fontSize,
+    bold: saved?.bold ?? def.bold,
+    width: saved?.width ?? def.width ?? 80,
+  }
+}
+
+export function CardFace({
+  templateUrl,
+  isBack,
+  replacements,
+  cardData,
+  fieldConfigs,
+  isCustomBack,
+  clinicName,
+  visibleFieldKeys,
+}: {
+  templateUrl: string
+  isBack?: boolean
+  replacements?: Record<string, string>
+  cardData: WarrantyCardPrintLayoutProps['cardData']
+  fieldConfigs?: Record<string, FieldConfig>
+  isCustomBack?: boolean
+  clinicName?: string
+  visibleFieldKeys?: string[]
+}) {
+  const svgContent = useSvgWithReplacement(templateUrl, replacements || {})
+  const isSvg = templateUrl?.toLowerCase().endsWith('.svg')
+
+  const fieldValues: Record<string, string> = {
+    sl_no: `${cardData.serialNo}`,
+    lab_dentist: cardData.labDentist || '-',
+    patient_name: cardData.patientName || '-',
+    tooth_no: cardData.toothNo || '-',
+    reg_no: cardData.regNo || '-',
+    warranty: formatWarranty(cardData.warranty),
+    valid_till: formatDate(cardData.validTill),
+    authorised_code: cardData.authorisedCode || '-',
+    clinic_name: cardData.clinicName || '',
+  }
+
+  return (
+    <div className="atm-card" style={{ position: 'relative', width: '85.6mm', height: '53.98mm', overflow: 'visible', fontFamily: 'Arial, sans-serif' }}>
+      {templateUrl ? (
+        isSvg && svgContent ? (
+          <div
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+          />
+        ) : isSvg && !svgContent ? (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+            <p style={{ color: '#999', fontSize: '10px' }}>Loading template...</p>
+          </div>
+        ) : (
+          <img
+            src={templateUrl}
+            alt={isBack ? 'Warranty card back' : 'Warranty card front'}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none' }}
+            crossOrigin="anonymous"
+          />
+        )
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, border: '1px dashed #ccc', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: '#999', fontSize: '10px' }}>No template uploaded</p>
+        </div>
+      )}
+
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+        }}
+      >
+        {isBack ? (
+          isCustomBack && clinicName && (
+            <span style={fieldStyle(getMerged(fieldConfigs, 'clinic_name'))}>
+              {clinicName}
+            </span>
+          )
+        ) : (
+          (visibleFieldKeys || FIELD_KEYS).map((key) => {
+            const cfg = getMerged(fieldConfigs, key)
+            return (
+              <span key={key} style={fieldStyle(cfg)}>
+                {fieldValues[key]}
+              </span>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function WarrantyCardPrintLayout(props: WarrantyCardPrintLayoutProps) {
+  const frontReplacements = props.mode === 'custom' && props.clinicName
+    ? { CLINIC_NAME: props.clinicName }
+    : undefined
+
+  const backReplacements = props.mode === 'custom' && props.clinicName
+    ? { CLINIC_NAME: props.clinicName }
+    : undefined
+
+  const printCss = `
+    @media print {
+      @page { size: 85.6mm 53.98mm; margin: 0; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        width: 85.6mm;
+        overflow: hidden;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .atm-card { width: 85.6mm !important; height: 53.98mm !important; }
+      .atm-card ~ .atm-card { page-break-before: always; }
+    }
+  `
+
+  return (
+    <div id="warranty-card-print-root" style={{ margin: 0, padding: 0 }}>
+      <style>{printCss}</style>
+      <CardFace
+        templateUrl={props.templates.frontUrl}
+        isBack={false}
+        replacements={frontReplacements}
+        cardData={props.cardData}
+        fieldConfigs={props.fieldConfigs}
+      />
+      {!props.singleFace && (
+        <CardFace
+          templateUrl={props.templates.backUrl}
+          isBack={true}
+          replacements={backReplacements}
+          cardData={props.cardData}
+          fieldConfigs={props.backFieldConfigs || props.fieldConfigs}
+          isCustomBack={props.mode === 'custom'}
+          clinicName={props.clinicName}
+        />
+      )}
+    </div>
+  )
+}
