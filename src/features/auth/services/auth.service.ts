@@ -68,7 +68,9 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
     throw new Error(`Database Error (${error.code || status}): ${error.message}`)
   }
 
-  const labRow = Array.isArray(data.labs) ? data.labs[0] : data.labs
+  const labRow: any = Array.isArray(data.labs)
+    ? data.labs[0]
+    : data.labs
   if (
     data.role === 'lab_user' &&
     labRow &&
