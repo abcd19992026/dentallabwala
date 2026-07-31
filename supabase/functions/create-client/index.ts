@@ -7,6 +7,7 @@ interface CreateClientInput {
   email: string
   mobileNumber?: string
   address?: string
+  studioCode?: string
   password: string
   templateAFrontUrl?: string
   templateABackUrl?: string
@@ -158,6 +159,7 @@ serve(async (req: Request) => {
           email,
           mobile: body.mobileNumber?.trim() || null,
           address: body.address?.trim() || null,
+          studio_code: body.studioCode?.trim() || null,
           template_a_front: body.templateAFrontUrl || null,
           template_a_back: body.templateABackUrl || null,
           template_b_front: body.templateBFrontUrl || null,

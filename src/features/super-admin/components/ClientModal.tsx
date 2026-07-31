@@ -20,6 +20,7 @@ export function ClientModal({
   const [email, setEmail] = useState('')
   const [mobileNumber, setMobileNumber] = useState('')
   const [address, setAddress] = useState('')
+  const [studioCode, setStudioCode] = useState('')
   const [password, setPassword] = useState('')
 
   // Template upload preview states (optional fields)
@@ -45,6 +46,7 @@ export function ClientModal({
       setEmail(initialData.email || '')
       setMobileNumber(initialData.mobileNumber || '')
       setAddress(initialData.address || '')
+      setStudioCode(initialData.studioCode || '')
       setTemplateAFront(initialData.templateAFrontUrl || '')
       setTemplateABack(initialData.templateABackUrl || '')
       setTemplateBFront(initialData.templateBFrontUrl || '')
@@ -55,6 +57,7 @@ export function ClientModal({
       setEmail('')
       setMobileNumber('')
       setAddress('')
+      setStudioCode('')
       setPassword('')
       setTemplateAFront('')
       setTemplateABack('')
@@ -93,6 +96,7 @@ export function ClientModal({
         email,
         mobileNumber,
         address,
+        studioCode,
         password: password || undefined,
         templateAFrontUrl: templateAFront,
         templateABackUrl: templateABack,
@@ -217,6 +221,18 @@ export function ClientModal({
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   placeholder="e.g. +91 98765 43210"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {/* Studio Code */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">Studio Code</label>
+                <input
+                  type="text"
+                  value={studioCode}
+                  onChange={(e) => setStudioCode(e.target.value)}
+                  placeholder="e.g. CDS"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>

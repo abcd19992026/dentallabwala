@@ -73,6 +73,7 @@ export async function getClients(): Promise<DentalLabClient[]> {
       email: row.email || '',
       mobileNumber: row.mobile || row.mobile_number || '',
       address: row.address || '',
+      studioCode: row.studio_code || '',
       templateAFrontUrl: row.template_a_front || row.template_a_front_url || '',
       templateABackUrl: row.template_a_back || row.template_a_back_url || '',
       templateBFrontUrl: row.template_b_front || row.template_b_front_url || '',
@@ -112,6 +113,7 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
       email,
       mobileNumber: input.mobileNumber || '',
       address: input.address || '',
+      studioCode: input.studioCode || '',
       templateAFrontUrl: input.templateAFrontUrl || '',
       templateABackUrl: input.templateABackUrl || '',
       templateBFrontUrl: input.templateBFrontUrl || '',
@@ -149,6 +151,7 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
       password,
       mobileNumber: input.mobileNumber?.trim() || '',
       address: input.address?.trim() || '',
+      studioCode: input.studioCode?.trim() || '',
       isActive: input.isActive ?? true,
     }),
   })
@@ -253,6 +256,7 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
     email: result.data.email,
     mobileNumber: result.data.mobileNumber,
     address: result.data.address,
+    studioCode: result.data.studioCode || input.studioCode?.trim() || '',
     templateAFrontUrl: uploadedUrls['template_a_front'] || '',
     templateABackUrl: uploadedUrls['template_a_back'] || '',
     templateBFrontUrl: uploadedUrls['template_b_front'] || '',
@@ -360,6 +364,7 @@ export async function updateClient(
   if (input.email !== undefined) updates.email = input.email
   if (input.mobileNumber !== undefined) updates.mobile = input.mobileNumber
   if (input.address !== undefined) updates.address = input.address
+  if (input.studioCode !== undefined) updates.studio_code = input.studioCode
   if (input.isActive !== undefined) updates.is_active = input.isActive
 
   // Use uploaded storage paths when user provided new files, otherwise fall back to existing URL values

@@ -10,6 +10,7 @@ interface DoctorPrintLayoutProps {
   toDate?: string
   printLabName?: string
   printLabAddress?: string
+  studioCode?: string
 }
 
 function formatDate(dateStr?: string | null): string {
@@ -30,7 +31,6 @@ function formatCurrency(amount: number): string {
 }
 
 export function DoctorPrintLayout({
-  labAddress,
   doctor,
   supplies,
   payments,
@@ -38,6 +38,7 @@ export function DoctorPrintLayout({
   toDate,
   printLabName,
   printLabAddress,
+  studioCode,
 }: DoctorPrintLayoutProps) {
   // Filter supplies & payments by date range if provided
   const filteredSupplies = supplies.filter((item) => {
@@ -85,20 +86,13 @@ export function DoctorPrintLayout({
 
       {/* ─── HEADER SECTION ─── */}
       <div className="text-center mb-4 space-y-1">
-        {/* Lab Address below Lab Name */}
-        {labAddress && (
-          <p className="text-xs font-semibold text-black uppercase tracking-tight">
-            {labAddress}
-          </p>
-        )}
-
         {printLabName && (
-          <p className="text-lg font-bold uppercase text-center text-black">
+          <p className="text-xl font-bold uppercase text-center text-black">
             {printLabName}
           </p>
         )}
         {printLabAddress && (
-          <p className="text-xs font-semibold uppercase text-center text-black">
+          <p className="text-sm font-semibold uppercase text-center text-black">
             {printLabAddress}
           </p>
         )}
@@ -128,7 +122,9 @@ export function DoctorPrintLayout({
           <thead>
             <tr className="border-b border-black bg-slate-100 print:bg-transparent font-bold">
               <th className="border border-black px-1.5 py-1 text-center w-16">DATE</th>
-              <th className="border border-black px-1.5 py-1 text-center w-20">CASE NO.</th>
+              <th className="border border-black px-1.5 py-1 text-center w-20">
+                {studioCode?.trim() ? `${studioCode.toUpperCase()} NO.` : 'CASE NO.'}
+              </th>
               <th className="border border-black px-2 py-1 text-left">DOCTOR NAME</th>
               <th className="border border-black px-2 py-1 text-left">PATIENT NAME</th>
               <th className="border border-black px-2 py-1 text-left">WORK</th>

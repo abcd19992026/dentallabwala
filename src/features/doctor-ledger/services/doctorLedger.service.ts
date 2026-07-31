@@ -61,12 +61,12 @@ export const doctorLedgerService = {
   /**
    * Fetch logged-in client's lab record details (lab_name, address)
    */
-  async getLabInfo(labId: string): Promise<{ lab_name: string; address?: string } | null> {
+  async getLabInfo(labId: string): Promise<{ lab_name: string; address?: string; studio_code?: string } | null> {
     if (isSupabaseConfigured && labId) {
       try {
         const { data, error } = await supabase
           .from('labs')
-          .select('lab_name, address')
+          .select('lab_name, address, studio_code')
           .eq('id', labId)
           .maybeSingle()
 
@@ -74,6 +74,7 @@ export const doctorLedgerService = {
           return {
             lab_name: data.lab_name || '',
             address: data.address || '',
+            studio_code: data.studio_code || '',
           }
         }
       } catch (err) {

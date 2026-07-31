@@ -5,6 +5,7 @@ export interface DentalLabClient {
   email?: string
   mobileNumber?: string
   address?: string
+  studioCode?: string
   templateAFrontUrl?: string
   templateABackUrl?: string
   templateBFrontUrl?: string
@@ -19,6 +20,7 @@ export type CreateClientInput = {
   email?: string
   mobileNumber?: string
   address?: string
+  studioCode?: string
   templateAFrontUrl?: string
   templateABackUrl?: string
   templateBFrontUrl?: string

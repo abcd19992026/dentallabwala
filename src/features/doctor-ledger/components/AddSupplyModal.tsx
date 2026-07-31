@@ -6,9 +6,11 @@ interface AddSupplyModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>) => Promise<void>
+  /** Logged-in lab's Studio Code, used for the field label (e.g. "RDS No.") */
+  studioCode?: string
 }
 
-export function AddSupplyModal({ isOpen, onClose, onSave }: AddSupplyModalProps) {
+export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSupplyModalProps) {
   const today = new Date().toISOString().split('T')[0]
   const [entryDate, setEntryDate] = useState(today)
   const [caseNo, setCaseNo] = useState('')
@@ -87,13 +89,13 @@ export function AddSupplyModal({ isOpen, onClose, onSave }: AddSupplyModalProps)
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Case Number
+                {studioCode?.trim() ? `${studioCode.trim().toUpperCase()} No.` : 'Case Number'}
               </label>
               <input
                 type="text"
                 value={caseNo}
                 onChange={(e) => setCaseNo(e.target.value)}
-                placeholder="CS-2401"
+                placeholder={studioCode?.trim() ? `${studioCode.trim().toUpperCase()} No.` : 'Case Number'}
                 className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
               />
             </div>

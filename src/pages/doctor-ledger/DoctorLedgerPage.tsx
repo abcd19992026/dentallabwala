@@ -15,9 +15,10 @@ export default function DoctorLedgerPage() {
   const effectiveLabId = labId || tenant?.id || ''
 
   // Logged-in Client Lab Details
-  const [labDetails, setLabDetails] = useState<{ lab_name: string; address: string }>({
+  const [labDetails, setLabDetails] = useState<{ lab_name: string; address: string; studio_code: string }>({
     lab_name: '',
     address: '',
+    studio_code: '',
   })
 
   // View state: 'list' | 'profile'
@@ -36,8 +37,6 @@ export default function DoctorLedgerPage() {
   // Print Tab Date Range
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [labNameInput, setLabNameInput] = useState('')
-  const [labAddressInput, setLabAddressInput] = useState('')
   const [isPrinting, setIsPrinting] = useState(false)
 
   // Modals
@@ -54,11 +53,13 @@ export default function DoctorLedgerPage() {
         setLabDetails({
           lab_name: info.lab_name,
           address: info.address || '',
+          studio_code: info.studio_code || '',
         })
       } else if (tenant?.name) {
         setLabDetails({
           lab_name: tenant.name,
           address: '',
+          studio_code: '',
         })
       }
     }
@@ -243,22 +244,22 @@ export default function DoctorLedgerPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredDoctors.map((doc) => (
-                  <div
-                    key={doc.id}
-                    onClick={() => setActiveDoctor(doc)}
-                    className="bg-white p-5 rounded border border-slate-300 shadow-sm hover:border-blue-600 hover:shadow-md cursor-pointer transition-all space-y-2 relative"
+                <div
+                  key={doc.id}
+                  onClick={() => setActiveDoctor(doc)}
+                  className="bg-white p-5 rounded border border-slate-300 shadow-sm hover:border-blue-600 hover:shadow-md cursor-pointer transition-all space-y-2 relative"
+                >
+                  <button
+                    onClick={(e) => handleDeleteDoctor(doc, e)}
+                    className="absolute top-2 right-2 text-red-400 hover:text-red-700 transition-colors"
+                    title="Delete Doctor"
+                    type="button"
                   >
-                    <button
-                      onClick={(e) => handleDeleteDoctor(doc, e)}
-                      className="absolute top-2 right-2 text-red-400 hover:text-red-700 transition-colors"
-                      title="Delete Doctor"
-                      type="button"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <h3 className="font-bold text-base text-slate-900 uppercase">
-                      {doc.name || 'Unnamed Doctor'}
-                    </h3>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <h3 className="font-bold text-base text-slate-900 uppercase">
+                    {doc.name || 'Unnamed Doctor'}
+                  </h3>
                   <div className="text-xs text-slate-600 space-y-1">
                     <p>
                       <span className="font-semibold text-slate-700">Clinic:</span>{' '}
@@ -352,11 +353,10 @@ export default function DoctorLedgerPage() {
                   setProfileTab('supply')
                   setIsPrinting(false)
                 }}
-                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${
-                  profileTab === 'supply'
-                    ? 'border-blue-700 text-blue-700 bg-blue-50/50'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${profileTab === 'supply'
+                  ? 'border-blue-700 text-blue-700 bg-blue-50/50'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 1. Supply
               </button>
@@ -365,11 +365,10 @@ export default function DoctorLedgerPage() {
                   setProfileTab('payment')
                   setIsPrinting(false)
                 }}
-                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${
-                  profileTab === 'payment'
-                    ? 'border-blue-700 text-blue-700 bg-blue-50/50'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${profileTab === 'payment'
+                  ? 'border-blue-700 text-blue-700 bg-blue-50/50'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 2. Payment
               </button>
@@ -377,11 +376,10 @@ export default function DoctorLedgerPage() {
                 onClick={() => {
                   setProfileTab('print')
                 }}
-                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${
-                  profileTab === 'print'
-                    ? 'border-blue-700 text-blue-700 bg-blue-50/50'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${profileTab === 'print'
+                  ? 'border-blue-700 text-blue-700 bg-blue-50/50'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 3. Print
               </button>
@@ -408,7 +406,9 @@ export default function DoctorLedgerPage() {
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
                       <th className="border border-slate-300 p-2 text-center">Date</th>
-                      <th className="border border-slate-300 p-2 text-center">Case No.</th>
+                      <th className="border border-slate-300 p-2 text-center">
+                        {labDetails.studio_code?.trim() ? `${labDetails.studio_code.trim()} NO.`.toUpperCase() : 'Case No.'}
+                      </th>
                       <th className="border border-slate-300 p-2 text-left">Patient Name</th>
                       <th className="border border-slate-300 p-2 text-left">Work</th>
                       <th className="border border-slate-300 p-2 text-center">Tooth No.</th>
@@ -561,32 +561,6 @@ export default function DoctorLedgerPage() {
                   </div>
                 </div>
 
-                <div className="max-w-md">
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Lab Name
-                  </label>
-                  <input
-                    type="text"
-                    value={labNameInput}
-                    onChange={(e) => setLabNameInput(e.target.value)}
-                    placeholder="Enter Lab Name"
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
-                  />
-                </div>
-
-                <div className="max-w-md">
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Lab Address
-                  </label>
-                  <input
-                    type="text"
-                    value={labAddressInput}
-                    onChange={(e) => setLabAddressInput(e.target.value)}
-                    placeholder="Enter Lab Address"
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
-                  />
-                </div>
-
                 <div className="pt-2">
                   <button
                     onClick={handleGeneratePrint}
@@ -608,8 +582,9 @@ export default function DoctorLedgerPage() {
                   payments={payments}
                   fromDate={fromDate}
                   toDate={toDate}
-                  printLabName={labNameInput}
-                  printLabAddress={labAddressInput}
+                  printLabName={labDetails.lab_name || tenant?.name || ''}
+                  printLabAddress={labDetails.address}
+                  studioCode={labDetails.studio_code}
                 />
               </div>
             </div>
@@ -630,6 +605,7 @@ export default function DoctorLedgerPage() {
             isOpen={isAddSupplyOpen}
             onClose={() => setIsAddSupplyOpen(false)}
             onSave={handleSaveSupply}
+            studioCode={labDetails.studio_code}
           />
 
           <AddPaymentModal

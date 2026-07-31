@@ -1,0 +1,1 @@
+ALTER TABLE public.labs ADD COLUMN IF NOT EXISTS studio_code TEXT DEFAULT '';
