@@ -87,7 +87,7 @@ export function DoctorPrintLayout({
       {/* ─── HEADER SECTION ─── */}
       <div className="text-center mb-4 space-y-1">
         {printLabName && (
-          <p className="text-xl font-bold uppercase text-center text-black">
+          <p className="text-2xl font-bold uppercase text-center text-black">
             {printLabName}
           </p>
         )}
@@ -195,7 +195,7 @@ export function DoctorPrintLayout({
             <ol className="space-y-1 list-decimal list-inside font-medium text-black">
               {filteredPayments.map((p, idx) => (
                 <li key={p.id || idx} className="leading-snug">
-                  Rs. <span className="font-mono font-bold">{formatCurrency(p.amount)}</span> through{' '}
+                  Rs. <span className="font-mono font-bold">{formatCurrency(p.amount)}/-</span> through{' '}
                   <span className="font-semibold">{p.payment_mode}</span>
                   {p.payment_date ? ` on ${formatDate(p.payment_date)}` : ''}
                   {p.remarks ? ` (${p.remarks})` : ''}
@@ -205,10 +205,10 @@ export function DoctorPrintLayout({
           )}
           <div className="mt-3 pt-1.5 border-t border-black font-bold flex justify-between text-black">
             <span>TOTAL AMOUNT PAID TILL {toFormatted}:</span>
-            <span className="font-mono">Rs. {formatCurrency(totalPaymentReceived)}</span>
+            <span className="font-mono">Rs. {formatCurrency(totalPaymentReceived)}/-</span>
           </div>
           <div className="pt-1 text-xs text-black font-medium">
-            i.e. Rs. {formatCurrency(openingBalance)} + Rs. {formatCurrency(totalWorkAmount)} - Rs. {formatCurrency(totalPaymentReceived)} = Rs. {formatCurrency(finalDueAmount)} (Till {toFormatted})
+            i.e. Rs. {formatCurrency(openingBalance)} + Rs. {formatCurrency(totalWorkAmount)} - Rs. {formatCurrency(totalPaymentReceived)} = Rs. {formatCurrency(finalDueAmount)}/- (Till {toFormatted})
           </div>
         </div>
 
@@ -219,7 +219,7 @@ export function DoctorPrintLayout({
           </h4>
           <div className="flex justify-between py-0.5 border-b border-slate-300">
             <span className="font-semibold text-black">Opening Balance:</span>
-            <span className="font-mono font-bold">Rs. {formatCurrency(openingBalance)}</span>
+            <span className="font-mono font-bold">Rs. {formatCurrency(openingBalance)}/-</span>
           </div>
 
           <div className="flex justify-between py-0.5 border-b border-slate-300">
@@ -233,19 +233,19 @@ export function DoctorPrintLayout({
             <span className="font-semibold text-black">
               Total Amount of Work (Till {toFormatted}):
             </span>
-            <span className="font-mono font-bold">Rs. {formatCurrency(totalWorkAmount)}</span>
+            <span className="font-mono font-bold">Rs. {formatCurrency(totalWorkAmount)}/-</span>
           </div>
 
           <div className="flex justify-between py-0.5 border-b border-slate-300">
             <span className="font-semibold text-black">Total Payments:</span>
             <span className="font-mono font-bold text-black">
-              Rs. {formatCurrency(totalPaymentReceived)}
+              Rs. {formatCurrency(totalPaymentReceived)}/-
             </span>
           </div>
 
           <div className="flex justify-between py-1 pt-1 font-extrabold text-sm border-t-2 border-black text-black">
             <span>Closing Due:</span>
-            <span className="font-mono">Rs. {formatCurrency(finalDueAmount)}</span>
+            <span className="font-mono">Rs. {formatCurrency(finalDueAmount)}/-</span>
           </div>
         </div>
       </div>

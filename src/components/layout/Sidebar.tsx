@@ -28,7 +28,7 @@ const NAV_ITEMS = [
 /**
  * Sidebar — left navigation panel with branding and nav items.
  */
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { tenant } = useTenantStore()
 
   return (
@@ -57,6 +57,7 @@ export function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
