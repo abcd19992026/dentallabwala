@@ -81,6 +81,36 @@ export function DoctorPrintLayout({
           .print-hidden {
             display: none !important;
           }
+
+          /* Let the ledger table flow across multiple pages */
+          .printable-doctor-ledger table {
+            page-break-inside: auto;
+          }
+
+          /* Repeat the table header on every printed page */
+          .printable-doctor-ledger thead {
+            display: table-header-group;
+          }
+
+          /* Never split a single row across pages */
+          .printable-doctor-ledger tbody tr {
+            page-break-inside: avoid;
+          }
+
+          /* Keep rows within the printable area */
+          .printable-doctor-ledger tbody tr {
+            page-break-after: auto;
+          }
+
+          /* Do not clip the table during print (overflow wrapper) */
+          .printable-doctor-ledger .overflow-x-auto {
+            overflow: visible !important;
+          }
+
+          /* Keep Payment History + Summary together as one unit */
+          .printable-doctor-ledger .ledger-bottom {
+            page-break-inside: avoid;
+          }
         }
       `}</style>
 
@@ -117,7 +147,7 @@ export function DoctorPrintLayout({
       </div>
 
       {/* ─── SUPPLIES / WORK TABLE ─── */}
-      <div className="mb-4 overflow-x-auto">
+      <div className="mb-4 overflow-x-auto print:overflow-visible">
         <table className="w-full border-collapse border border-black text-xs">
           <thead>
             <tr className="border-b border-black bg-slate-100 print:bg-transparent font-bold">
@@ -183,7 +213,7 @@ export function DoctorPrintLayout({
       </div>
 
       {/* ─── BOTTOM SECTION: PAYMENT HISTORY & SUMMARY CALCULATIONS ─── */}
-      <div className="flex flex-row justify-between items-start gap-4 pt-2">
+      <div className="flex flex-row justify-between items-start gap-4 pt-2 ledger-bottom">
         {/* Payment History Box (Restored matching printed reference) */}
         <div className="flex-1 border-2 border-black p-3 bg-slate-50 print:bg-transparent text-xs">
           <h4 className="font-bold border-b border-black pb-1 mb-2 uppercase text-xs text-black">
