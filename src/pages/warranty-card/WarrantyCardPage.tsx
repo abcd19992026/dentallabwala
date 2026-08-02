@@ -11,9 +11,12 @@ import { WarrantyCardPrintLayout } from '@/features/warranty-card/components/War
 import { downloadWarrantyCardPDF } from '@/features/warranty-card/utils/pdfExport'
 import { TemplateSelectModal } from '@/features/warranty-card/components/TemplateSelectModal'
 import { TemplateConfigurator } from '@/features/warranty-card/components/TemplateConfigurator'
+import { BulkPrintModal } from '@/features/warranty-card/components/BulkPrintModal'
+import { BulkPrintLayout, type BulkPrintCardData } from '@/features/warranty-card/components/BulkPrintLayout'
 import { getTemplateConfig } from '@/features/warranty-card/services/templateConfig.service'
 import type { WarrantyCard, WarrantyCardFormData } from '@/features/warranty-card/types/warrantyCard.types'
 import type { TemplateKey } from '@/features/warranty-card/types/templateConfig.types'
+import type { FieldConfig } from '@/features/warranty-card/types/templateConfig.types'
 
 function formatDate(dateStr?: string | null): string {
   if (!dateStr) return '-'
@@ -38,6 +41,10 @@ export default function WarrantyCardPage() {
   const [isFlowModalOpen, setIsFlowModalOpen] = useState(false)
   const [isGenerateOpen, setIsGenerateOpen] = useState(false)
   const [generationType, setGenerationType] = useState<'main' | 'custom'>('main')
+
+  // Bulk Print state
+  const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false)
+  const [isPreparing, setIsPreparing] = useState(false)
 
   // Print / PDF state (no longer uses popup — determined from saved card data)
 
@@ -325,6 +332,142 @@ export default function WarrantyCardPage() {
     handlePrintOrDownload(card, 'pdf', mode, clinicName).catch(console.error)
   }
 
+  const generateSigned = async (path: string | null) => {
+    if (!path) return ''
+    const { data } = await supabase.storage
+      .from('template')
+      .createSignedUrl(path, 3600)
+    return data?.signedUrl || ''
+  }
+
+  const handleBulkPrint = async (from: number, to: number) => {
+    setIsBulkPrintOpen(false)
+    setIsPreparing(true)
+    try {
+      // Fetch templates
+      const { data: templateData, error: templateError } = await supabase
+        .from('warranty_templates')
+        .select('template_a_front, template_a_back, template_b_front, template_b_back')
+        .eq('lab_id', effectiveLabId)
+        .single()
+
+      if (templateError || !templateData) {
+        throw new Error('Template not found. Please contact Super Admin.')
+      }
+
+      // Cards in the selected serial range, sorted ascending
+      const rangeCards = cards
+        .filter((c) => c.sl_no >= from && c.sl_no <= to)
+        .sort((a, b) => a.sl_no - b.sl_no)
+
+      if (rangeCards.length === 0) {
+        throw new Error('No warranty cards found in the selected serial range.')
+      }
+
+      // Build print data for each card using its own saved template mode
+      const printCards: BulkPrintCardData[] = []
+      for (const card of rangeCards) {
+        const { mode, clinicName } = getMode(card)
+
+        const frontPath = mode === 'main'
+          ? templateData.template_a_front
+          : templateData.template_b_front
+        const backPath = mode === 'main'
+          ? templateData.template_a_back
+          : templateData.template_b_back
+
+        const [frontUrl, backUrl] = await Promise.all([
+          generateSigned(frontPath),
+          generateSigned(backPath),
+        ])
+
+        const templateKey: TemplateKey = mode === 'main' ? 'template_a_front' : 'template_b_front'
+        const fieldConfigs: Record<string, FieldConfig> = await getTemplateConfig(effectiveLabId, templateKey)
+        const backKey: TemplateKey = mode === 'main' ? 'template_a_back' : 'template_b_back'
+        const backFieldConfigs = mode === 'custom'
+          ? await getTemplateConfig(effectiveLabId, backKey)
+          : undefined
+
+        printCards.push({
+          cardData: {
+            serialNo: card.sl_no,
+            labDentist: card.lab_dentist || '',
+            patientName: card.patient_name || '',
+            toothNo: card.tooth_no || '',
+            regNo: card.reg_no || '',
+            warranty: card.warranty || '',
+            validTill: card.valid_till || '',
+            authorisedCode: card.authorised_code || '',
+            clinicName: clinicName || '',
+          },
+          mode,
+          clinicName,
+          templates: { frontUrl, backUrl },
+          fieldConfigs,
+          backFieldConfigs,
+        })
+      }
+
+      // Open print window and render the A4 bulk layout
+      const printWindow = window.open('', '_blank', 'width=800,height=600')
+      if (!printWindow) {
+        throw new Error('Popup blocked. Please allow popups for this site.')
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Bulk Warranty Cards</title>
+          <style>
+            @page { size: A4 portrait; margin: 5mm; }
+            html, body {
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              width: 210mm;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="print-root"></div>
+        </body>
+        </html>
+      `)
+      printWindow.document.close()
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const { createRoot } = await import('react-dom/client')
+      const rootEl = printWindow.document.getElementById('print-root')!
+      const reactRoot = createRoot(rootEl)
+      reactRoot.render(<BulkPrintLayout cards={printCards} />)
+
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      await waitForImages(rootEl)
+
+      printWindow.onafterprint = () => {
+        reactRoot.unmount()
+        printWindow.close()
+      }
+      printWindow.print()
+
+      setTimeout(() => {
+        try {
+          if (!printWindow.closed) {
+            reactRoot.unmount()
+            printWindow.close()
+          }
+        } catch { }
+      }, 8000)
+    } catch (err) {
+      console.error('Bulk print failed:', err)
+      alert(err instanceof Error ? err.message : 'Bulk print failed.')
+    } finally {
+      setIsPreparing(false)
+    }
+  }
+
   const openConfigure = async (card: WarrantyCard) => {
     setConfigCard(card)
     setIsTemplateSelectOpen(true)
@@ -368,13 +511,22 @@ export default function WarrantyCardPage() {
           <h1 className="text-2xl font-bold text-white">Warranty Card</h1>
           <p className="text-slate-400 text-sm mt-1">Issue and manage dental warranty cards</p>
         </div>
-        <button
-          onClick={() => setIsFlowModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-semibold transition-all shadow-lg shadow-violet-600/25"
-        >
-          <Plus size={16} />
-          Generate Warranty Card
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsBulkPrintOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition-colors"
+          >
+            <Printer size={16} />
+            Bulk Print
+          </button>
+          <button
+            onClick={() => setIsFlowModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-semibold transition-all shadow-lg shadow-violet-600/25"
+          >
+            <Plus size={16} />
+            Generate Warranty Card
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -452,6 +604,22 @@ export default function WarrantyCardPage() {
           </div>
         )}
       </div>
+
+      {/* Bulk Print Modal */}
+      <BulkPrintModal
+        isOpen={isBulkPrintOpen}
+        onClose={() => setIsBulkPrintOpen(false)}
+        onPrint={handleBulkPrint}
+      />
+
+      {/* Bulk Print Loading Overlay */}
+      {isPreparing && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl px-8 py-6 shadow-2xl">
+            <p className="text-white font-medium">Preparing Print Layout...</p>
+          </div>
+        </div>
+      )}
 
       {/* Generate Flow Modal */}
       <GenerateFlowModal
