@@ -163,11 +163,86 @@ export default function DoctorLedgerPage() {
     setPayments((prev) => [created, ...prev])
   }
 
-  const handleGeneratePrint = () => {
+  const handleGeneratePrint = async () => {
+    if (!activeDoctor) return
+
     setIsPrinting(true)
-    setTimeout(() => {
-      window.print()
-    }, 300)
+    let printWindow: Window | null = null
+    try {
+      // Open a dedicated print popup isolated from the AppShell layout
+      printWindow = window.open('', '_blank', 'width=1000,height=700')
+      if (!printWindow) {
+        alert('Popup blocked. Please allow popups for this site.')
+        return
+      }
+
+      // Clean isolated document (no AppShell / sidebar / header)
+      printWindow.document.open()
+      printWindow.document.write(
+        '<!DOCTYPE html><html><head><title>Doctor Ledger</title></head><body></body></html>'
+      )
+      printWindow.document.close()
+
+      // Copy all app styles into the popup (Tailwind CSS + any <style> tags)
+      const popupHead = printWindow.document.head
+      document.querySelectorAll('style').forEach((el) => {
+        popupHead.appendChild(el.cloneNode(true))
+      })
+      document.querySelectorAll('link[rel="stylesheet"]').forEach((el) => {
+        popupHead.appendChild(el.cloneNode(true))
+      })
+
+      // Clone ONLY the printable Doctor Ledger content
+      const source = document.querySelector('.printable-doctor-ledger')
+      if (!source) {
+        throw new Error('Printable ledger content not found.')
+      }
+      printWindow.document.body.appendChild(source.cloneNode(true))
+
+      // Wait until the popup document, styles, and fonts are fully loaded
+      await new Promise<void>((resolve) => {
+        const doc = printWindow!.document
+        const deadline = Date.now() + 5000
+        const check = () => {
+          const stylesReady = Array.from(doc.styleSheets).every((sheet) => {
+            try {
+              sheet.cssRules
+              return true
+            } catch {
+              return false
+            }
+          })
+          if (stylesReady || Date.now() > deadline) resolve()
+          else setTimeout(check, 50)
+        }
+        check()
+      })
+      await printWindow.document.fonts.ready
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      // Open the native browser print dialog (Chrome auto-paginates)
+      printWindow.onafterprint = () => {
+        printWindow?.close()
+        setIsPrinting(false)
+      }
+      printWindow.print()
+
+      // Fallback close if onafterprint didn't fire
+      setTimeout(() => {
+        try {
+          if (printWindow && !printWindow.closed) {
+            printWindow.close()
+            setIsPrinting(false)
+          }
+        } catch { }
+      }, 8000)
+    } catch (err) {
+      console.error('Failed to prepare doctor ledger print:', err)
+      alert('Failed to prepare print layout.')
+      if (printWindow && !printWindow.closed) printWindow.close()
+    } finally {
+      setIsPrinting(false)
+    }
   }
 
   const handleDeleteDoctor = async (doctor: Doctor, e: React.MouseEvent) => {
@@ -407,8 +482,9 @@ export default function DoctorLedgerPage() {
                     <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
                       <th className="border border-slate-300 p-2 text-center">Date</th>
                       <th className="border border-slate-300 p-2 text-center">
-                        {labDetails.studio_code?.trim() ? `${labDetails.studio_code.trim()} NO.`.toUpperCase() : 'Case No.'}
+                        {labDetails.studio_code?.trim() ? labDetails.studio_code.trim().toUpperCase() : 'Case No.'}
                       </th>
+                      <th className="border border-slate-300 p-2 text-left">Doctor Name</th>
                       <th className="border border-slate-300 p-2 text-left">Patient Name</th>
                       <th className="border border-slate-300 p-2 text-left">Work</th>
                       <th className="border border-slate-300 p-2 text-center">Tooth No.</th>
@@ -422,7 +498,7 @@ export default function DoctorLedgerPage() {
                   <tbody>
                     {supplies.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="p-6 text-center text-slate-500 italic">
+                        <td colSpan={11} className="p-6 text-center text-slate-500 italic">
                           No supply entries recorded yet. Click "Add Supply" above to add work entries.
                         </td>
                       </tr>
@@ -434,6 +510,9 @@ export default function DoctorLedgerPage() {
                           </td>
                           <td className="border border-slate-300 p-2 text-center font-mono font-medium">
                             {item.case_no || '-'}
+                          </td>
+                          <td className="border border-slate-300 p-2 uppercase font-medium">
+                            {item.doctor_name || ''}
                           </td>
                           <td className="border border-slate-300 p-2 uppercase font-medium">
                             {item.patient_name || '-'}

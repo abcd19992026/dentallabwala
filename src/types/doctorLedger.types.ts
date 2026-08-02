@@ -15,6 +15,7 @@ export interface DoctorSupply {
   doctor_id: string
   entry_date: string
   case_no: string
+  doctor_name: string
   patient_name: string
   work_description: string
   tooth_no: string

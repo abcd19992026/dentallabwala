@@ -182,7 +182,7 @@ export function DoctorPrintLayout({
                     {item.case_no}
                   </td>
                   <td className="border border-black px-2 py-1 uppercase">
-                    {doctor.name}
+                    {item.doctor_name}
                   </td>
                   <td className="border border-black px-2 py-1 uppercase">
                     {item.patient_name}
