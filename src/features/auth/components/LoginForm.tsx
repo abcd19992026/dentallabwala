@@ -35,10 +35,10 @@ export function LoginForm() {
             <Stethoscope size={44} className="text-white" />
           </div>
 
-          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-            Dental Lab
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-              Wala
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight tracking-wide">
+            DENTIVO
+            <span className="block text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 tracking-widest">
+              MANAGEMENT PORTAL
             </span>
           </h1>
           <p className="text-slate-400 text-lg max-w-xs mx-auto leading-relaxed">
@@ -67,7 +67,7 @@ export function LoginForm() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
               <Stethoscope size={20} className="text-white" />
             </div>
-            <span className="text-xl font-bold text-white">Dental Lab Wala</span>
+            <span className="text-xl font-bold text-white tracking-wide">DENTIVO</span>
           </div>
 
           {/* Heading */}
@@ -168,7 +168,7 @@ export function LoginForm() {
               Super Admin Login
             </Link>
             <p className="text-center text-slate-600 text-xs">
-              © {new Date().getFullYear()} Dental Lab Wala. All rights reserved.
+              © {new Date().getFullYear()} DENTIVO. All rights reserved.
             </p>
           </div>
         </div>

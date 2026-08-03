@@ -36,14 +36,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Brand / Logo Area */}
       <div className="h-16 flex items-center px-6 border-b border-slate-800 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/20">
             <span className="text-white font-bold text-sm">D</span>
           </div>
           <div className="min-w-0">
-            <p className="text-white font-semibold text-sm leading-tight truncate">
-              {tenant?.name ?? 'Dental Lab Wala'}
+            <p className="text-white font-bold text-sm leading-tight tracking-wide truncate">
+              {tenant?.name ?? 'DENTIVO'}
             </p>
-            <p className="text-slate-500 text-xs leading-tight">Management Portal</p>
+            <p className="text-blue-400/80 text-[10px] font-medium uppercase tracking-wider leading-tight">
+              Management Portal
+            </p>
           </div>
         </div>
       </div>
@@ -76,7 +78,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Footer */}
       <div className="p-4 border-t border-slate-800 flex-shrink-0">
         <p className="text-slate-600 text-xs text-center">
-          Dental Lab Wala · v1.0
+          DENTIVO · v1.0
         </p>
       </div>
     </aside>

@@ -142,7 +142,7 @@ export default function SuperAdminDashboardPage() {
                 </span>
               </div>
               <p className="text-slate-400 text-sm mt-0.5">
-                Dental Lab Wala · Client & Tenant Management
+                DENTIVO · Client & Tenant Management
               </p>
             </div>
           </div>

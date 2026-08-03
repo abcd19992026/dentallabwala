@@ -67,7 +67,7 @@ export function useAuth() {
           const targetRole = (expectedRole as UserRole) || USER_ROLES.LAB_USER
           useAuthStore.getState().setUser({
             id: targetRole === USER_ROLES.SUPER_ADMIN ? 'admin-mock-id' : 'lab-mock-id',
-            email: email || (targetRole === USER_ROLES.SUPER_ADMIN ? 'admin@dentallabwala.com' : 'lab@example.com'),
+            email: email || (targetRole === USER_ROLES.SUPER_ADMIN ? 'admin@dentivo.com' : 'lab@example.com'),
           } as any)
           useAuthStore.getState().setRole(targetRole)
           useAuthStore.getState().setLabId(targetRole === USER_ROLES.SUPER_ADMIN ? null : 'lab-demo-123')

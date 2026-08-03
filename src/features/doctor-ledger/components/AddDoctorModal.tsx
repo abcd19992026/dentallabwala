@@ -1,20 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { Doctor } from '@/types/doctorLedger.types'
 
 interface AddDoctorModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (doctorData: Partial<Omit<Doctor, 'id' | 'lab_id'>>) => Promise<void>
+  onSave: (doctorData: Partial<Omit<Doctor, 'id' | 'lab_id'>>, doctorId?: string) => Promise<void>
+  /** Doctor being edited, if any */
+  editingDoctor?: Doctor | null
 }
 
-export function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorModalProps) {
+export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDoctorModalProps) {
   const [doctorName, setDoctorName] = useState('')
   const [clinicName, setClinicName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [address, setAddress] = useState('')
   const [openingBalance, setOpeningBalance] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Pre-fill form when editing, or reset when adding
+  useEffect(() => {
+    if (!isOpen) return
+    if (editingDoctor) {
+      setDoctorName(editingDoctor.name || '')
+      setClinicName(editingDoctor.clinic_name || '')
+      setPhoneNumber(editingDoctor.phone || '')
+      setAddress(editingDoctor.address || '')
+      setOpeningBalance(editingDoctor.opening_balance ? String(editingDoctor.opening_balance) : '')
+    } else {
+      setDoctorName('')
+      setClinicName('')
+      setPhoneNumber('')
+      setAddress('')
+      setOpeningBalance('')
+    }
+  }, [isOpen, editingDoctor])
 
   if (!isOpen) return null
 
@@ -28,7 +48,7 @@ export function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorModalProps)
         phone: phoneNumber,
         address,
         opening_balance: openingBalance ? parseFloat(openingBalance) : 0,
-      })
+      }, editingDoctor?.id)
       // Reset form
       setDoctorName('')
       setClinicName('')
@@ -48,7 +68,9 @@ export function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorModalProps)
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-lg font-bold text-slate-800">Add Doctor</h3>
+          <h3 className="text-lg font-bold text-slate-800">
+            {editingDoctor ? 'Edit Doctor' : 'Add Doctor'}
+          </h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -140,7 +162,7 @@ export function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorModalProps)
               disabled={isSubmitting}
               className="px-5 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : 'Save Doctor'}
+              {isSubmitting ? 'Saving...' : editingDoctor ? 'Update Doctor' : 'Save Doctor'}
             </button>
           </div>
         </form>

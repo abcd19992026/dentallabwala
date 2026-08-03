@@ -47,6 +47,18 @@ export default function DoctorLedgerPage() {
   // Supply being edited (null = adding new)
   const [editingSupply, setEditingSupply] = useState<DoctorSupply | null>(null)
 
+  // Doctor being edited (null = adding new)
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null)
+
+  // Success toast message
+  const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    if (!successMessage) return
+    const t = setTimeout(() => setSuccessMessage(''), 2500)
+    return () => clearTimeout(t)
+  }, [successMessage])
+
   // Fetch Logged-in Client Lab Info from database
   useEffect(() => {
     async function loadLabInfo() {
@@ -137,9 +149,25 @@ export default function DoctorLedgerPage() {
   }, [activeDoctor, supplies, payments])
 
   // Handlers
-  const handleSaveDoctor = async (doctorData: Partial<Omit<Doctor, 'id' | 'lab_id'>>) => {
-    const created = await doctorLedgerService.createDoctor(effectiveLabId, doctorData)
-    setDoctors((prev) => [created, ...prev])
+  const handleSaveDoctor = async (
+    doctorData: Partial<Omit<Doctor, 'id' | 'lab_id'>>,
+    doctorId?: string
+  ) => {
+    if (doctorId) {
+      const updated = await doctorLedgerService.updateDoctor(effectiveLabId, doctorId, doctorData)
+      if (updated) {
+        setDoctors((prev) => prev.map((d) => (d.id === doctorId ? updated : d)))
+        setSuccessMessage('Doctor updated successfully.')
+      }
+    } else {
+      const created = await doctorLedgerService.createDoctor(effectiveLabId, doctorData)
+      setDoctors((prev) => [created, ...prev])
+    }
+  }
+
+  const handleEditDoctor = (doc: Doctor) => {
+    setEditingDoctor(doc)
+    setIsAddDoctorOpen(true)
   }
 
   const handleSaveSupply = async (
@@ -311,7 +339,10 @@ export default function DoctorLedgerPage() {
           {/* Top Bar: ONLY Add Doctor button & Search box */}
           <div className="bg-white p-4 rounded border border-slate-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
             <button
-              onClick={() => setIsAddDoctorOpen(true)}
+              onClick={() => {
+                setEditingDoctor(null)
+                setIsAddDoctorOpen(true)
+              }}
               className="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-5 py-2.5 rounded text-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -347,6 +378,17 @@ export default function DoctorLedgerPage() {
                   onClick={() => setActiveDoctor(doc)}
                   className="bg-white p-5 rounded border border-slate-300 shadow-sm hover:border-blue-600 hover:shadow-md cursor-pointer transition-all space-y-2 relative"
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEditDoctor(doc)
+                    }}
+                    className="absolute top-2 right-10 text-blue-600 hover:text-blue-800 transition-colors"
+                    title="Edit Doctor"
+                    type="button"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => handleDeleteDoctor(doc, e)}
                     className="absolute top-2 right-2 text-red-400 hover:text-red-700 transition-colors"
@@ -707,11 +749,22 @@ export default function DoctorLedgerPage() {
         </div>
       )}
 
+      {/* Success Toast */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-[70] bg-emerald-600 text-white px-4 py-2 rounded shadow-lg text-sm">
+          {successMessage}
+        </div>
+      )}
+
       {/* Modals */}
       <AddDoctorModal
         isOpen={isAddDoctorOpen}
-        onClose={() => setIsAddDoctorOpen(false)}
+        onClose={() => {
+          setIsAddDoctorOpen(false)
+          setEditingDoctor(null)
+        }}
         onSave={handleSaveDoctor}
+        editingDoctor={editingDoctor}
       />
 
       {activeDoctor && (

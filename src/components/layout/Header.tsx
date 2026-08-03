@@ -33,7 +33,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
         <div className="min-w-0">
           <h1 className="text-white font-semibold text-base leading-tight truncate">
-            {tenant?.name ?? 'Dental Lab Wala'}
+            {tenant?.name ?? 'DENTIVO'}
           </h1>
           <p className="text-slate-500 text-xs">Management Portal</p>
         </div>

@@ -12,10 +12,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Dental Lab Wala',
-        short_name: 'Dental Lab',
-        description: 'Dental Lab Management Software',
-        theme_color: '#0f172a',
+        name: 'DENTIVO',
+        short_name: 'DENTIVO',
+        description: 'Dentivo Management Software',
+        theme_color: '#030811ff',
         background_color: '#0f172a',
         display: 'standalone',
         icons: [

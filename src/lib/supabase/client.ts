@@ -13,7 +13,7 @@ const isConfigured =
 
 if (!isConfigured) {
   console.warn(
-    '[Dental Lab Wala] Supabase is not configured.\n' +
+    '[DENTIVO] Supabase is not configured.\n' +
     'Please add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local\n' +
     'See .env.example for reference.'
   )

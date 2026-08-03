@@ -36,7 +36,7 @@ export function SuperAdminLoginForm() {
               <ShieldCheck size={32} className="text-white" />
             </div>
             <h1 className="text-xl font-bold text-white mb-1">Admin Access</h1>
-            <p className="text-slate-500 text-sm">Dental Lab Wala Control Panel</p>
+            <p className="text-slate-500 text-sm">DENTIVO Control Panel</p>
           </div>
 
           {/* Security notice */}
@@ -79,7 +79,7 @@ export function SuperAdminLoginForm() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@dentallabwala.com"
+                placeholder="admin@dentivo.com"
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
               />
             </div>
@@ -127,7 +127,7 @@ export function SuperAdminLoginForm() {
         </div>
 
         <p className="text-center text-slate-700 text-xs mt-6">
-          © {new Date().getFullYear()} Dental Lab Wala
+          © {new Date().getFullYear()} DENTIVO
         </p>
       </div>
     </div>

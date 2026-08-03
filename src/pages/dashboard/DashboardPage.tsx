@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/authStore'
 export default function DashboardPage() {
   const { labId } = useAuthStore()
 
-  const [warrantyTotal, setWarrantyTotal] = useState<number | null>(null)
+  const [doctorsThisMonth, setDoctorsThisMonth] = useState<number | null>(null)
   const [doctorTotal, setDoctorTotal] = useState<number | null>(null)
   const [monthTotal, setMonthTotal] = useState<number | null>(null)
 
@@ -20,15 +20,15 @@ export default function DashboardPage() {
     const monthPrefix = new Date().toISOString().slice(0, 7)
 
     Promise.all([
-      supabase.from('warranty_cards').select('id', { count: 'exact', head: true }).eq('lab_id', labId),
+      supabase.from('doctors').select('id', { count: 'exact', head: true }).eq('lab_id', labId).gte('created_at', `${monthPrefix}-01`),
       supabase.from('doctors').select('id', { count: 'exact', head: true }).eq('lab_id', labId),
       supabase
         .from('warranty_cards')
         .select('id', { count: 'exact', head: true })
         .eq('lab_id', labId)
         .gte('created_at', `${monthPrefix}-01`),
-    ]).then(([wc, doc, mc]) => {
-      setWarrantyTotal(wc.count ?? 0)
+    ]).then(([dm, doc, mc]) => {
+      setDoctorsThisMonth(dm.count ?? 0)
       setDoctorTotal(doc.count ?? 0)
       setMonthTotal(mc.count ?? 0)
     }).catch(console.error)
@@ -36,9 +36,9 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      label: 'Warranty Cards',
-      value: warrantyTotal !== null ? String(warrantyTotal) : '—',
-      description: 'Total issued',
+      label: 'Doctors Added This Month',
+      value: doctorsThisMonth !== null ? String(doctorsThisMonth) : '—',
+      description: 'New doctors registered',
       icon: FileText,
       color: 'blue',
     },

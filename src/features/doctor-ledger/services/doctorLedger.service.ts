@@ -182,6 +182,74 @@ export const doctorLedgerService = {
   },
 
   /**
+   * Update an existing doctor
+   */
+  async updateDoctor(
+    labId: string,
+    doctorId: string,
+    doctorData: Partial<Omit<Doctor, 'id' | 'lab_id'>>
+  ): Promise<Doctor> {
+    const local = getLocalDoctors()
+    const existing = local.find((d) => d.id === doctorId)
+
+    const merged: Doctor = {
+      ...(existing as Doctor),
+      id: doctorId,
+      lab_id: labId,
+      name: doctorData.name?.trim() ?? existing?.name ?? '',
+      clinic_name: doctorData.clinic_name?.trim() ?? existing?.clinic_name ?? '',
+      phone: doctorData.phone?.trim() ?? existing?.phone ?? '',
+      address: doctorData.address?.trim() ?? existing?.address ?? '',
+      opening_balance: Number(doctorData.opening_balance) || Number(existing?.opening_balance) || 0,
+      created_at: existing?.created_at ?? new Date().toISOString(),
+    }
+
+    const idx = local.findIndex((d) => d.id === doctorId)
+    if (idx !== -1) {
+      local[idx] = merged
+    } else {
+      local.unshift(merged)
+    }
+    saveLocalDoctors(local)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('doctors')
+          .update({
+            name: merged.name,
+            clinic_name: merged.clinic_name,
+            phone: merged.phone,
+            address: merged.address,
+            opening_balance: merged.opening_balance,
+          })
+          .eq('id', doctorId)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Supabase updateDoctor error:', error)
+        } else if (data) {
+          return {
+            id: data.id,
+            lab_id: data.lab_id,
+            name: data.name || '',
+            clinic_name: data.clinic_name || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            opening_balance: Number(data.opening_balance) || 0,
+            created_at: data.created_at,
+          }
+        }
+      } catch (err) {
+        console.error('Supabase updateDoctor exception:', err)
+      }
+    }
+
+    return merged
+  },
+
+  /**
    * Fetch supply entries for a doctor
    */
   async getSupplies(labId: string, doctorId: string): Promise<DoctorSupply[]> {
