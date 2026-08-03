@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Search, ArrowLeft, Printer, Trash2 } from 'lucide-react'
+import { Plus, Search, ArrowLeft, Printer, Trash2, Pencil } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
 import { doctorLedgerService } from '@/features/doctor-ledger/services/doctorLedger.service'
@@ -43,6 +43,9 @@ export default function DoctorLedgerPage() {
   const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false)
   const [isAddSupplyOpen, setIsAddSupplyOpen] = useState(false)
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false)
+
+  // Supply being edited (null = adding new)
+  const [editingSupply, setEditingSupply] = useState<DoctorSupply | null>(null)
 
   // Fetch Logged-in Client Lab Info from database
   useEffect(() => {
@@ -140,15 +143,35 @@ export default function DoctorLedgerPage() {
   }
 
   const handleSaveSupply = async (
-    supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>
+    supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>,
+    supplyId?: string
   ) => {
     if (!activeDoctor) return
-    const created = await doctorLedgerService.addSupply(
-      effectiveLabId,
-      activeDoctor.id,
-      supplyData
-    )
-    setSupplies((prev) => [created, ...prev])
+
+    if (supplyId) {
+      // Edit mode: update existing record in place (position unchanged)
+      const updated = await doctorLedgerService.updateSupply(
+        effectiveLabId,
+        supplyId,
+        supplyData
+      )
+      if (updated) {
+        setSupplies((prev) => prev.map((s) => (s.id === supplyId ? updated : s)))
+      }
+    } else {
+      // Add mode: prepend new record to the top
+      const created = await doctorLedgerService.addSupply(
+        effectiveLabId,
+        activeDoctor.id,
+        supplyData
+      )
+      setSupplies((prev) => [...prev, created])
+    }
+  }
+
+  const openEditSupply = (item: DoctorSupply) => {
+    setEditingSupply(item)
+    setIsAddSupplyOpen(true)
   }
 
   const handleSavePayment = async (
@@ -467,7 +490,10 @@ export default function DoctorLedgerPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-base text-slate-800">Supply Records</h3>
                 <button
-                  onClick={() => setIsAddSupplyOpen(true)}
+                  onClick={() => {
+                    setEditingSupply(null)
+                    setIsAddSupplyOpen(true)
+                  }}
                   className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded text-sm transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -536,14 +562,24 @@ export default function DoctorLedgerPage() {
                             {item.remarks || '-'}
                           </td>
                           <td className="border border-slate-300 p-2 text-center">
-                            <button
-                              onClick={() => handleDeleteSupply(item)}
-                              className="text-red-400 hover:text-red-700 transition-colors"
-                              title="Delete Supply"
-                              type="button"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openEditSupply(item)}
+                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                                title="Edit Supply"
+                                type="button"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSupply(item)}
+                                className="text-red-400 hover:text-red-700 transition-colors"
+                                title="Delete Supply"
+                                type="button"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -682,9 +718,13 @@ export default function DoctorLedgerPage() {
         <>
           <AddSupplyModal
             isOpen={isAddSupplyOpen}
-            onClose={() => setIsAddSupplyOpen(false)}
+            onClose={() => {
+              setIsAddSupplyOpen(false)
+              setEditingSupply(null)
+            }}
             onSave={handleSaveSupply}
             studioCode={labDetails.studio_code}
+            editingSupply={editingSupply}
           />
 
           <AddPaymentModal

@@ -102,3 +102,34 @@ export async function createWarrantyCard(
   if (error) throw error
   return data
 }
+
+export async function updateWarrantyCard(
+  labId: string,
+  cardId: string,
+  input: WarrantyCardFormData,
+): Promise<WarrantyCard> {
+  if (!labId || !cardId) {
+    throw new Error('lab_id and card id are required.')
+  }
+
+  const { data, error } = await supabase
+    .from('warranty_cards')
+    .update({
+      lab_dentist: input.lab_dentist.trim(),
+      patient_name: input.patient_name.trim(),
+      tooth_no: input.tooth_no.trim(),
+      reg_no: input.reg_no.trim(),
+      issue_date: input.issue_date,
+      valid_till: input.valid_till,
+      warranty: input.warranty,
+      authorised_code: input.authorised_code.trim(),
+      clinic_name: input.clinic_name?.trim() || null,
+    })
+    .eq('id', cardId)
+    .eq('lab_id', labId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}

@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Plus, Search, Printer, FileDown, FileText, Settings } from 'lucide-react'
+import { Plus, Search, Printer, FileDown, FileText, Settings, Pencil } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
 import { supabase } from '@/lib/supabase/client'
-import { getWarrantyCards, createWarrantyCard } from '@/features/warranty-card/services/warrantyCard.service'
+import { getWarrantyCards, createWarrantyCard, updateWarrantyCard } from '@/features/warranty-card/services/warrantyCard.service'
 import { GenerateCardModal } from '@/features/warranty-card/components/GenerateCardModal'
 import { GenerateFlowModal } from '@/features/warranty-card/components/GenerateFlowModal'
 
@@ -41,6 +41,7 @@ export default function WarrantyCardPage() {
   const [isFlowModalOpen, setIsFlowModalOpen] = useState(false)
   const [isGenerateOpen, setIsGenerateOpen] = useState(false)
   const [generationType, setGenerationType] = useState<'main' | 'custom'>('main')
+  const [editingCard, setEditingCard] = useState<WarrantyCard | null>(null)
 
   // Bulk Print state
   const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false)
@@ -82,15 +83,26 @@ export default function WarrantyCardPage() {
 
   const handleFlowSelect = (type: 'main' | 'custom') => {
     setGenerationType(type)
+    setEditingCard(null)
     setIsFlowModalOpen(false)
     setIsGenerateOpen(true)
   }
 
-  const handleSaveCard = async (formData: WarrantyCardFormData) => {
+  const handleEditCard = (card: WarrantyCard) => {
+    setEditingCard(card)
+    setGenerationType(card.clinic_name ? 'custom' : 'main')
+    setIsGenerateOpen(true)
+  }
+
+  const handleSaveCard = async (formData: WarrantyCardFormData, cardId?: string) => {
     if (!effectiveLabId) {
       throw new Error('Lab ID is missing. Make sure you are logged in to a valid lab account.')
     }
-    await createWarrantyCard(effectiveLabId, formData)
+    if (cardId) {
+      await updateWarrantyCard(effectiveLabId, cardId, formData)
+    } else {
+      await createWarrantyCard(effectiveLabId, formData)
+    }
     await loadCards()
   }
   const waitForImages = (element: HTMLElement): Promise<void> => {
@@ -575,6 +587,13 @@ export default function WarrantyCardPage() {
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => handleEditCard(card)}
+                            className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
+                            title="Edit Warranty Card"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
                             onClick={() => handlePrintAction(card)}
                             className="p-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors"
                             title="Print"
@@ -628,12 +647,16 @@ export default function WarrantyCardPage() {
         onSelect={handleFlowSelect}
       />
 
-      {/* Generate Card Modal */}
+      {/* Generate / Edit Card Modal */}
       <GenerateCardModal
         isOpen={isGenerateOpen}
-        onClose={() => setIsGenerateOpen(false)}
+        onClose={() => {
+          setIsGenerateOpen(false)
+          setEditingCard(null)
+        }}
         onSave={handleSaveCard}
         generationType={generationType}
+        editingCard={editingCard}
       />
 
       {/* Template Select Modal */}

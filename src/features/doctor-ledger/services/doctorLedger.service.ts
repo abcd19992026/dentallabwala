@@ -196,7 +196,7 @@ export const doctorLedgerService = {
         .select('*')
         .eq('lab_id', labId)
         .eq('doctor_id', doctorId)
-        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: true })
 
       if (error || !data) {
         console.warn('Supabase getSupplies fallback to local:', error)
@@ -303,6 +303,86 @@ export const doctorLedgerService = {
     }
 
     return newSupply
+  },
+
+  /**
+   * Update an existing supply entry (does not change its position/order)
+   */
+  async updateSupply(
+    labId: string,
+    supplyId: string,
+    supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>
+  ): Promise<DoctorSupply> {
+    const local = getLocalSupplies()
+    const existing = local.find((s) => s.id === supplyId)
+
+    const merged: DoctorSupply = {
+      ...(existing as DoctorSupply),
+      id: supplyId,
+      lab_id: labId,
+      entry_date: supplyData.entry_date || existing?.entry_date || new Date().toISOString().split('T')[0],
+      case_no: supplyData.case_no?.trim() ?? existing?.case_no ?? '',
+      doctor_name: supplyData.doctor_name?.trim() ?? existing?.doctor_name ?? '',
+      patient_name: supplyData.patient_name?.trim() ?? existing?.patient_name ?? '',
+      work_description: supplyData.work_description?.trim() ?? existing?.work_description ?? '',
+      tooth_no: supplyData.tooth_no?.trim() ?? existing?.tooth_no ?? '',
+      unit_count: Number(supplyData.unit_count) || Number(existing?.unit_count) || 1,
+      billing_amount: Number(supplyData.billing_amount) || Number(existing?.billing_amount) || 0,
+      delivery_date: supplyData.delivery_date ?? existing?.delivery_date ?? null,
+      remarks: supplyData.remarks?.trim() ?? existing?.remarks ?? '',
+    }
+
+    const idx = local.findIndex((s) => s.id === supplyId)
+    if (idx !== -1) {
+      local[idx] = merged
+    } else {
+      local.unshift(merged)
+    }
+    saveLocalSupplies(local)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('doctor_supplies')
+          .update({
+            entry_date: merged.entry_date,
+            case_no: merged.case_no,
+            doctor_name: merged.doctor_name,
+            patient_name: merged.patient_name,
+            work_description: merged.work_description,
+            tooth_no: merged.tooth_no,
+            unit_count: merged.unit_count,
+            billing_amount: merged.billing_amount,
+            delivery_date: merged.delivery_date,
+            remarks: merged.remarks,
+          })
+          .eq('id', supplyId)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Supabase updateSupply error:', error)
+        } else if (data) {
+          return {
+            ...merged,
+            entry_date: data.entry_date,
+            case_no: data.case_no || '',
+            doctor_name: data.doctor_name || '',
+            patient_name: data.patient_name || '',
+            work_description: data.work_description || '',
+            tooth_no: data.tooth_no || '',
+            unit_count: Number(data.unit_count) || 1,
+            billing_amount: Number(data.billing_amount) || 0,
+            delivery_date: data.delivery_date || null,
+            remarks: data.remarks || '',
+          }
+        }
+      } catch (err) {
+        console.error('Supabase updateSupply exception:', err)
+      }
+    }
+
+    return merged
   },
 
   /**

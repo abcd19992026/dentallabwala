@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { DoctorSupply } from '@/types/doctorLedger.types'
 
 interface AddSupplyModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>) => Promise<void>
+  onSave: (supplyData: Omit<DoctorSupply, 'id' | 'lab_id' | 'doctor_id'>, supplyId?: string) => Promise<void>
   /** Logged-in lab's Studio Code, used for the field label (e.g. "RDS No.") */
   studioCode?: string
+  /** Supply record being edited, if any */
+  editingSupply?: DoctorSupply | null
 }
 
-export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSupplyModalProps) {
+export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSupply }: AddSupplyModalProps) {
   const today = new Date().toISOString().split('T')[0]
   const [entryDate, setEntryDate] = useState(today)
   const [caseNo, setCaseNo] = useState('')
@@ -23,6 +25,34 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSuppl
   const [deliveryDate, setDeliveryDate] = useState('')
   const [remarks, setRemarks] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Pre-fill form when editing, or reset when adding
+  useEffect(() => {
+    if (!isOpen) return
+    if (editingSupply) {
+      setEntryDate(editingSupply.entry_date || today)
+      setCaseNo(editingSupply.case_no || '')
+      setDoctorName(editingSupply.doctor_name || '')
+      setPatientName(editingSupply.patient_name || '')
+      setWorkDescription(editingSupply.work_description || '')
+      setToothNo(editingSupply.tooth_no || '')
+      setUnitCount(String(editingSupply.unit_count || 1))
+      setBillingAmount(editingSupply.billing_amount ? String(editingSupply.billing_amount) : '')
+      setDeliveryDate(editingSupply.delivery_date || '')
+      setRemarks(editingSupply.remarks || '')
+    } else {
+      setEntryDate(today)
+      setCaseNo('')
+      setDoctorName('')
+      setPatientName('')
+      setWorkDescription('')
+      setToothNo('')
+      setUnitCount('1')
+      setBillingAmount('')
+      setDeliveryDate('')
+      setRemarks('')
+    }
+  }, [isOpen, editingSupply, today])
 
   if (!isOpen) return null
 
@@ -41,7 +71,7 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSuppl
         billing_amount: billingAmount ? parseFloat(billingAmount) : 0,
         delivery_date: deliveryDate || null,
         remarks,
-      })
+      }, editingSupply?.id)
       // Reset form
       setEntryDate(today)
       setCaseNo('')
@@ -66,7 +96,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSuppl
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-lg font-bold text-slate-800">Add Supply Entry</h3>
+          <h3 className="text-lg font-bold text-slate-800">
+            {editingSupply ? 'Edit Supply Entry' : 'Add Supply Entry'}
+          </h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -225,7 +257,7 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode }: AddSuppl
               disabled={isSubmitting}
               className="px-5 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : 'Save Supply'}
+              {isSubmitting ? 'Saving...' : editingSupply ? 'Update Supply' : 'Save Supply'}
             </button>
           </div>
         </form>

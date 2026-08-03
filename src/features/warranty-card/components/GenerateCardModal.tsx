@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
-import type { WarrantyCardFormData } from '../types/warrantyCard.types'
+import type { WarrantyCard, WarrantyCardFormData } from '../types/warrantyCard.types'
 
 interface GenerateCardModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: WarrantyCardFormData) => Promise<void>
+  onSave: (data: WarrantyCardFormData, cardId?: string) => Promise<void>
   generationType: 'main' | 'custom'
+  /** Card being edited, if any */
+  editingCard?: WarrantyCard | null
 }
 
 function calcValidTill(issueDate: string, years: number): string {
@@ -16,7 +18,7 @@ function calcValidTill(issueDate: string, years: number): string {
   return d.toISOString().split('T')[0]
 }
 
-export function GenerateCardModal({ isOpen, onClose, onSave, generationType }: GenerateCardModalProps) {
+export function GenerateCardModal({ isOpen, onClose, onSave, generationType, editingCard }: GenerateCardModalProps) {
   const [labDentist, setLabDentist] = useState('')
   const [patientName, setPatientName] = useState('')
   const [toothNo, setToothNo] = useState('')
@@ -30,6 +32,35 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType }: G
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Pre-fill form when editing, or reset when adding
+  useEffect(() => {
+    if (!isOpen) return
+    setError(null)
+    setSuccess(null)
+    if (editingCard) {
+      const years = parseInt(editingCard.warranty, 10) || 1
+      setLabDentist(editingCard.lab_dentist || '')
+      setPatientName(editingCard.patient_name || '')
+      setToothNo(editingCard.tooth_no || '')
+      setRegNo(editingCard.reg_no || '')
+      setIssueDate(editingCard.issue_date || today)
+      setWarrantyYears(years)
+      setValidTill(editingCard.valid_till || calcValidTill(editingCard.issue_date, years))
+      setAuthorisedCode(editingCard.authorised_code || '')
+      setClinicName(editingCard.clinic_name || '')
+    } else {
+      setLabDentist('')
+      setPatientName('')
+      setToothNo('')
+      setRegNo('')
+      setIssueDate(today)
+      setWarrantyYears(1)
+      setValidTill(calcValidTill(today, 1))
+      setAuthorisedCode('')
+      setClinicName('')
+    }
+  }, [isOpen, editingCard, today])
 
   if (!isOpen) return null
 
@@ -59,8 +90,8 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType }: G
         warranty: String(warrantyYears),
         authorised_code: authorisedCode,
         clinic_name: generationType === 'custom' && clinicName.trim() ? clinicName.trim() : null,
-      })
-      setSuccess('Warranty card generated successfully.')
+      }, editingCard?.id)
+      setSuccess(editingCard ? 'Warranty card updated successfully.' : 'Warranty card generated successfully.')
       setTimeout(() => onClose(), 1500)
     } catch (err) {
       setError(err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err))
@@ -74,7 +105,7 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType }: G
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-8">
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
           <h3 className="text-lg font-semibold text-white">
-            Generate Warranty Card
+            {editingCard ? 'Edit Warranty Card' : 'Generate Warranty Card'}
             <span className="ml-2 text-xs font-medium text-slate-400">
               {generationType === 'main' ? '(Main Lab)' : '(Custom Clinic)'}
             </span>
@@ -219,7 +250,7 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType }: G
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-semibold transition-all disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              {isSubmitting ? 'Saving...' : 'Generate Card'}
+              {isSubmitting ? 'Saving...' : editingCard ? 'Update Card' : 'Generate Card'}
             </button>
           </div>
         </form>
