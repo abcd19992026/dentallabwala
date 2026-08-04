@@ -72,6 +72,8 @@ export async function getClients(): Promise<DentalLabClient[]> {
       ownerName: row.owner_name || '',
       email: row.email || '',
       mobileNumber: row.mobile || row.mobile_number || '',
+      whatsappNumber: row.whatsapp_number || '',
+      logoPath: row.logo_path || '',
       address: row.address || '',
       studioCode: row.studio_code || '',
       templateAFrontUrl: row.template_a_front || row.template_a_front_url || '',
@@ -112,6 +114,7 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
       ownerName: input.ownerName || '',
       email,
       mobileNumber: input.mobileNumber || '',
+      whatsappNumber: input.whatsappNumber || '',
       address: input.address || '',
       studioCode: input.studioCode || '',
       templateAFrontUrl: input.templateAFrontUrl || '',
@@ -150,6 +153,7 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
       email,
       password,
       mobileNumber: input.mobileNumber?.trim() || '',
+      whatsappNumber: input.whatsappNumber?.trim() || '',
       address: input.address?.trim() || '',
       studioCode: input.studioCode?.trim() || '',
       isActive: input.isActive ?? true,
@@ -249,12 +253,40 @@ export async function createClient(input: CreateClientInput): Promise<DentalLabC
     }
   }
 
+  // Step 4: Upload lab logo to lab-logo bucket (if provided)
+  let uploadedLogoPath = ''
+  if (input.logoFile) {
+    const ext = input.logoFile.name.split('.').pop() || 'png'
+    const logoStoragePath = `${labId}/logo.${ext}`
+
+    const { error: logoUploadError } = await supabase.storage
+      .from('lab-logo')
+      .upload(logoStoragePath, input.logoFile, { upsert: true })
+
+    if (logoUploadError) {
+      throw new Error(`Failed to upload lab logo: ${logoUploadError.message}`)
+    }
+
+    uploadedLogoPath = logoStoragePath
+
+    const { error: logoUpdateError } = await supabase
+      .from('labs')
+      .update({ logo_path: uploadedLogoPath })
+      .eq('id', labId)
+
+    if (logoUpdateError) {
+      console.error('Failed to save logo_path to labs table:', logoUpdateError)
+    }
+  }
+
   return {
     id: result.data.id,
     labName: result.data.labName,
     ownerName: result.data.ownerName,
     email: result.data.email,
     mobileNumber: result.data.mobileNumber,
+    whatsappNumber: result.data.whatsappNumber || input.whatsappNumber?.trim() || '',
+    logoPath: uploadedLogoPath || result.data.logoPath || '',
     address: result.data.address,
     studioCode: result.data.studioCode || input.studioCode?.trim() || '',
     templateAFrontUrl: uploadedUrls['template_a_front'] || '',
@@ -357,15 +389,34 @@ export async function updateClient(
     }
   }
 
+  // Upload lab logo if a new file was provided
+  let uploadedLogoPath: string | undefined
+  if (formInput.logoFile) {
+    const ext = formInput.logoFile.name.split('.').pop() || 'png'
+    const logoStoragePath = `${clientId}/logo.${ext}`
+
+    const { error: logoUploadError } = await supabase.storage
+      .from('lab-logo')
+      .upload(logoStoragePath, formInput.logoFile, { upsert: true })
+
+    if (logoUploadError) {
+      throw new Error(`Failed to upload lab logo: ${logoUploadError.message}`)
+    }
+
+    uploadedLogoPath = logoStoragePath
+  }
+
   // Build labs table updates
   const updates: Record<string, any> = {}
   if (input.labName !== undefined) updates.lab_name = input.labName
   if (input.ownerName !== undefined) updates.owner_name = input.ownerName
   if (input.email !== undefined) updates.email = input.email
   if (input.mobileNumber !== undefined) updates.mobile = input.mobileNumber
+  if (input.whatsappNumber !== undefined) updates.whatsapp_number = input.whatsappNumber
   if (input.address !== undefined) updates.address = input.address
   if (input.studioCode !== undefined) updates.studio_code = input.studioCode
   if (input.isActive !== undefined) updates.is_active = input.isActive
+  if (uploadedLogoPath !== undefined) updates.logo_path = uploadedLogoPath
 
   // Use uploaded storage paths when user provided new files, otherwise fall back to existing URL values
   const templateAFront = uploadedStoragePaths['template_a_front'] ?? (input.templateAFrontUrl !== undefined ? input.templateAFrontUrl : undefined)

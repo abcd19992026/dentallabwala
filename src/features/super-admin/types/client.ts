@@ -4,6 +4,8 @@ export interface DentalLabClient {
   ownerName?: string
   email?: string
   mobileNumber?: string
+  whatsappNumber?: string
+  logoPath?: string
   address?: string
   studioCode?: string
   templateAFrontUrl?: string
@@ -19,6 +21,8 @@ export type CreateClientInput = {
   ownerName?: string
   email?: string
   mobileNumber?: string
+  whatsappNumber?: string
+  logoFile?: File | null
   address?: string
   studioCode?: string
   templateAFrontUrl?: string

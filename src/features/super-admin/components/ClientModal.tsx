@@ -19,9 +19,14 @@ export function ClientModal({
   const [ownerName, setOwnerName] = useState('')
   const [email, setEmail] = useState('')
   const [mobileNumber, setMobileNumber] = useState('')
+  const [whatsappNumber, setWhatsappNumber] = useState('')
   const [address, setAddress] = useState('')
   const [studioCode, setStudioCode] = useState('')
   const [password, setPassword] = useState('')
+
+  // Lab Logo upload state
+  const [logoPreview, setLogoPreview] = useState<string>('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
 
   // Template upload preview states (optional fields)
   const [templateAFront, setTemplateAFront] = useState<string>('')
@@ -45,17 +50,21 @@ export function ClientModal({
       setOwnerName(initialData.ownerName || '')
       setEmail(initialData.email || '')
       setMobileNumber(initialData.mobileNumber || '')
+      setWhatsappNumber(initialData.whatsappNumber || '')
       setAddress(initialData.address || '')
       setStudioCode(initialData.studioCode || '')
       setTemplateAFront(initialData.templateAFrontUrl || '')
       setTemplateABack(initialData.templateABackUrl || '')
       setTemplateBFront(initialData.templateBFrontUrl || '')
       setTemplateBBack(initialData.templateBBackUrl || '')
+      setLogoPreview('')
+      setLogoFile(null)
     } else {
       setLabName('')
       setOwnerName('')
       setEmail('')
       setMobileNumber('')
+      setWhatsappNumber('')
       setAddress('')
       setStudioCode('')
       setPassword('')
@@ -67,6 +76,8 @@ export function ClientModal({
       setTemplateABackFile(null)
       setTemplateBFrontFile(null)
       setTemplateBBackFile(null)
+      setLogoPreview('')
+      setLogoFile(null)
     }
   }, [initialData, isOpen])
 
@@ -95,9 +106,11 @@ export function ClientModal({
         ownerName,
         email,
         mobileNumber,
+        whatsappNumber,
         address,
         studioCode,
         password: password || undefined,
+        logoFile: logoFile || undefined,
         templateAFrontUrl: templateAFront,
         templateABackUrl: templateABack,
         templateBFrontUrl: templateBFront,
@@ -225,6 +238,18 @@ export function ClientModal({
                 />
               </div>
 
+              {/* WhatsApp Number */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-300">WhatsApp Number</label>
+                <input
+                  type="text"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="e.g. +91 98765 43210"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
               {/* Studio Code */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-300">Studio Code</label>
@@ -261,6 +286,43 @@ export function ClientModal({
                   placeholder="Enter full lab address..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
                 />
+              </div>
+
+              {/* Lab Logo (Optional) */}
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-slate-300">Lab Logo (Optional)</label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-slate-700 hover:border-violet-500/50 hover:bg-slate-900 cursor-pointer transition-all text-xs text-slate-400 flex-shrink-0">
+                    <Upload size={14} className="text-violet-400" />
+                    <span className="truncate max-w-[160px]">{logoFile?.name || logoPreview ? 'Change Logo' : 'Choose Logo'}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setLogoFile(file)
+                          const reader = new FileReader()
+                          reader.onload = (ev) => setLogoPreview(ev.target?.result as string)
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                    />
+                  </label>
+                  {logoPreview && (
+                    <div className="relative">
+                      <img src={logoPreview} alt="Logo preview" className="h-12 w-12 rounded-lg object-contain border border-slate-700 bg-white" />
+                      <button
+                        type="button"
+                        onClick={() => { setLogoFile(null); setLogoPreview('') }}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] leading-none"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

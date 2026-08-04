@@ -15,10 +15,13 @@ export default function DoctorLedgerPage() {
   const effectiveLabId = labId || tenant?.id || ''
 
   // Logged-in Client Lab Details
-  const [labDetails, setLabDetails] = useState<{ lab_name: string; address: string; studio_code: string }>({
+  const [labDetails, setLabDetails] = useState<{ lab_name: string; address: string; studio_code: string; mobile: string; whatsapp_number: string; logoUrl: string }>({
     lab_name: '',
     address: '',
     studio_code: '',
+    mobile: '',
+    whatsapp_number: '',
+    logoUrl: '',
   })
 
   // View state: 'list' | 'profile'
@@ -69,12 +72,18 @@ export default function DoctorLedgerPage() {
           lab_name: info.lab_name,
           address: info.address || '',
           studio_code: info.studio_code || '',
+          mobile: info.mobile || '',
+          whatsapp_number: info.whatsapp_number || '',
+          logoUrl: info.logoUrl || '',
         })
       } else if (tenant?.name) {
         setLabDetails({
           lab_name: tenant.name,
           address: '',
           studio_code: '',
+          mobile: '',
+          whatsapp_number: '',
+          logoUrl: '',
         })
       }
     }
@@ -746,6 +755,9 @@ export default function DoctorLedgerPage() {
                   printLabName={labDetails.lab_name || tenant?.name || ''}
                   printLabAddress={labDetails.address}
                   studioCode={labDetails.studio_code}
+                  mobileNumber={labDetails.mobile}
+                  whatsappNumber={labDetails.whatsapp_number}
+                  logoUrl={labDetails.logoUrl}
                 />
               </div>
             </div>

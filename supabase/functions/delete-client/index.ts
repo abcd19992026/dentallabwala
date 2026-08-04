@@ -110,7 +110,7 @@ serve(async (req: Request) => {
 
     const authUserId = profileData?.id || null
 
-    // Step 1: Delete all template files from storage for this lab
+    // Step 1a: Delete all template files from storage for this lab
     const { data: storageFiles, error: storageListError } = await supabase.storage
       .from('template')
       .list(labId)
@@ -122,7 +122,23 @@ serve(async (req: Request) => {
         .remove(storagePathsToDelete)
 
       if (storageDeleteError) {
-        console.warn('[delete-client] Failed to delete some storage files:', storageDeleteError.message)
+        console.warn('[delete-client] Failed to delete some template files:', storageDeleteError.message)
+      }
+    }
+
+    // Step 1b: Delete all logo files from lab-logo storage for this lab
+    const { data: logoFiles, error: logoListError } = await supabase.storage
+      .from('lab-logo')
+      .list(labId)
+
+    if (!logoListError && logoFiles && logoFiles.length > 0) {
+      const logoPathsToDelete = logoFiles.map((f) => `${labId}/${f.name}`)
+      const { error: logoDeleteError } = await supabase.storage
+        .from('lab-logo')
+        .remove(logoPathsToDelete)
+
+      if (logoDeleteError) {
+        console.warn('[delete-client] Failed to delete some logo files:', logoDeleteError.message)
       }
     }
 

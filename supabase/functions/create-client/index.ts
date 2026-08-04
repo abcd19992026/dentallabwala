@@ -6,6 +6,8 @@ interface CreateClientInput {
   ownerName?: string
   email: string
   mobileNumber?: string
+  whatsappNumber?: string
+  logoPath?: string
   address?: string
   studioCode?: string
   password: string
@@ -158,6 +160,8 @@ serve(async (req: Request) => {
           owner_name: ownerName,
           email,
           mobile: body.mobileNumber?.trim() || null,
+          whatsapp_number: body.whatsappNumber?.trim() || null,
+          logo_path: body.logoPath?.trim() || null,
           address: body.address?.trim() || null,
           studio_code: body.studioCode?.trim() || null,
           template_a_front: body.templateAFrontUrl || null,
@@ -200,6 +204,8 @@ serve(async (req: Request) => {
         ownerName: labData.owner_name,
         email: labData.email,
         mobileNumber: labData.mobile,
+        whatsappNumber: labData.whatsapp_number,
+        logoPath: labData.logo_path,
         address: labData.address,
         isActive: labData.is_active,
         createdAt: labData.created_at,
