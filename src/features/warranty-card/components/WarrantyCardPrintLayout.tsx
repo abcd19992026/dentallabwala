@@ -81,7 +81,7 @@ function formatDate(dateStr?: string | null): string {
 
 function formatWarranty(val: string): string {
   const n = Number(val)
-  return n > 0 ? `${val} Year${n > 1 ? 's' : ''}` : val
+  return n > 0 ? `${val} ${n > 1 ? '' : ''}` : val
 }
 
 function fieldStyle(cfg: { left: number; top: number; fontSize: number; bold: boolean; width: number }) {
@@ -147,8 +147,11 @@ export function CardFace({
     reg_no: cardData.regNo || '-',
     warranty: formatWarranty(cardData.warranty),
     valid_till: formatDate(cardData.validTill),
-    authorised_code: cardData.authorisedCode || '-',
+
     clinic_name: cardData.clinicName || '',
+    tagline: material.heading,
+    material_text: material.text,
+    material_name: cardData.materialType || 'Zirconia',
   }
 
   return (
@@ -185,43 +188,35 @@ export function CardFace({
         }}
       >
         {isBack ? (
-          isCustomBack && clinicName && (
-            <span style={fieldStyle(getMerged(fieldConfigs, 'clinic_name'))}>
-              {clinicName}
+          <>
+            {isCustomBack && clinicName && (
+              <span style={fieldStyle(getMerged(fieldConfigs, 'clinic_name'))}>
+                {clinicName}
+              </span>
+            )}
+            <span style={fieldStyle(getMerged(fieldConfigs, 'material_name'))}>
+              {fieldValues.material_name}
             </span>
-          )
+          </>
         ) : (
           <>
-            {/* Material red heading + blue text (center aligned) */}
-            <div style={{ position: 'absolute', left: 0, top: '172px', width: '100%', textAlign: 'center' }}>
-              <span
-                style={{
-                  color: '#DC2626',
-                  fontWeight: 700,
-                  fontSize: '9px',
-                  textTransform: 'uppercase',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {material.heading}
-              </span>
-            </div>
-            <div style={{ position: 'absolute', left: 0, top: '186px', width: '100%', textAlign: 'center' }}>
-              <span
-                style={{
-                  color: '#1D4ED8',
-                  fontSize: '8px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {material.text}
-              </span>
-            </div>
-
-            {(visibleFieldKeys || FIELD_KEYS).map((key) => {
+            {(visibleFieldKeys || FIELD_KEYS)
+              .filter((key) => key !== 'material_name')
+              .map((key) => {
               const cfg = getMerged(fieldConfigs, key)
+              const style = {
+                ...fieldStyle(cfg),
+                color:
+                  !isBack && key === 'clinic_name'
+                    ? '#0B3D91'
+                    : key === 'tagline'
+                      ? '#DC2626'
+                      : key === 'material_text'
+                        ? '#1D4ED8'
+                        : '#111',
+              }
               return (
-                <span key={key} style={fieldStyle(cfg)}>
+                <span key={key} style={style}>
                   {fieldValues[key]}
                 </span>
               )
@@ -245,7 +240,7 @@ export function WarrantyCardPrintLayout(props: WarrantyCardPrintLayoutProps) {
   // Replace the literal material name (e.g. "Zirconia") on the back side
   const backLiteralReplacements =
     props.cardData.materialType &&
-    props.cardData.materialType.toLowerCase() !== 'zirconia'
+      props.cardData.materialType.toLowerCase() !== 'zirconia'
       ? { Zirconia: props.cardData.materialType }
       : undefined
 

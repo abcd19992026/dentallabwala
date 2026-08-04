@@ -61,8 +61,10 @@ export function TemplateConfigurator({ labId, templateKey, templateUrl, onBack, 
   const visibleKeys = useMemo(() => {
     const isB = templateKey.startsWith('template_b')
     const isBack = templateKey.endsWith('back')
-    if (isBack) return isB ? ['clinic_name'] : []
-    return isB ? [...FIELD_KEYS] : FIELD_KEYS.filter((k) => k !== 'clinic_name')
+    if (isBack) return isB ? ['clinic_name', 'material_name'] : ['material_name']
+    return isB
+      ? FIELD_KEYS.filter((k) => k !== 'material_name')
+      : FIELD_KEYS.filter((k) => k !== 'clinic_name' && k !== 'material_name')
   }, [templateKey])
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -190,6 +192,9 @@ export function TemplateConfigurator({ labId, templateKey, templateUrl, onBack, 
                 cardData={cardData}
                 fieldConfigs={fields}
                 visibleFieldKeys={visibleKeys}
+                isBack={templateKey.endsWith('back')}
+                isCustomBack={templateKey.startsWith('template_b')}
+                clinicName={cardData.clinicName}
               />
               <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
                 {visibleKeys.map((key) => {

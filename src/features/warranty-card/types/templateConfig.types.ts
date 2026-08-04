@@ -34,8 +34,11 @@ export const FIELD_LABELS: Record<string, string> = {
   reg_no: 'Reg. No.',
   warranty: 'Warranty',
   valid_till: 'Valid Till',
-  authorised_code: 'Authorised Code',
+
   clinic_name: 'Clinic Name',
+  tagline: 'Tagline',
+  material_text: 'Material Text',
+  material_name: 'Material Name',
 }
 
 /** ATM card dimensions: 85.6mm × 53.98mm ≈ 324px × 204px at 96dpi */
@@ -43,15 +46,18 @@ export const CARD_W_PX = 324
 export const CARD_H_PX = 204
 
 export const DEFAULT_FIELD_CONFIGS: Record<string, FieldConfig> = {
-  sl_no:            { left: 140, top: 10,  fontSize: 8, bold: false, width: 80 },
-  lab_dentist:      { left: 10,  top: 30,  fontSize: 8, bold: false, width: 140 },
-  patient_name:     { left: 10,  top: 50,  fontSize: 8, bold: false, width: 140 },
-  tooth_no:         { left: 10,  top: 70,  fontSize: 8, bold: false, width: 80 },
-  reg_no:           { left: 10,  top: 90,  fontSize: 8, bold: false, width: 100 },
-  warranty:         { left: 10,  top: 110, fontSize: 8, bold: false, width: 80 },
-  valid_till:       { left: 10,  top: 130, fontSize: 8, bold: false, width: 100 },
-  authorised_code:  { left: 10,  top: 150, fontSize: 8, bold: false, width: 120 },
-  clinic_name:      { left: 10,  top: 170, fontSize: 8, bold: false, width: 140 },
+  sl_no: { left: 140, top: 10, fontSize: 8, bold: false, width: 80 },
+  lab_dentist: { left: 10, top: 30, fontSize: 8, bold: false, width: 140 },
+  patient_name: { left: 10, top: 50, fontSize: 8, bold: false, width: 140 },
+  tooth_no: { left: 10, top: 70, fontSize: 8, bold: false, width: 80 },
+  reg_no: { left: 10, top: 90, fontSize: 8, bold: false, width: 100 },
+  warranty: { left: 10, top: 110, fontSize: 8, bold: false, width: 80 },
+  valid_till: { left: 10, top: 130, fontSize: 8, bold: false, width: 100 },
+
+  clinic_name: { left: 10, top: 170, fontSize: 8, bold: false, width: 140 },
+  tagline: { left: 62, top: 172, fontSize: 9, bold: true, width: 200 },
+  material_text: { left: 76, top: 186, fontSize: 8, bold: false, width: 172 },
+  material_name: { left: 100, top: 80, fontSize: 10, bold: true, width: 120 },
 }
 
 export const FIELD_KEYS = Object.keys(DEFAULT_FIELD_CONFIGS)
