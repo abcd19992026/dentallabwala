@@ -93,8 +93,9 @@ export async function createWarrantyCard(
       issue_date: input.issue_date,
       valid_till: input.valid_till,
       warranty: input.warranty,
-      authorised_code: input.authorised_code.trim(),
+      authorised_code: input.authorised_code?.trim() || '',
       clinic_name: input.clinic_name?.trim() || null,
+      material_type: input.material_type || 'Zirconia',
     })
     .select()
     .single()
@@ -122,8 +123,9 @@ export async function updateWarrantyCard(
       issue_date: input.issue_date,
       valid_till: input.valid_till,
       warranty: input.warranty,
-      authorised_code: input.authorised_code.trim(),
+      authorised_code: input.authorised_code?.trim() || '',
       clinic_name: input.clinic_name?.trim() || null,
+      material_type: input.material_type || 'Zirconia',
     })
     .eq('id', cardId)
     .eq('lab_id', labId)

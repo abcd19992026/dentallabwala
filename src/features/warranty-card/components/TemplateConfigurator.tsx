@@ -19,6 +19,7 @@ interface TemplateConfiguratorProps {
     validTill: string
     authorisedCode: string
     clinicName: string
+    materialType: string
   }
 }
 

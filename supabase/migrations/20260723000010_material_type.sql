@@ -1,0 +1,1 @@
+ALTER TABLE public.warranty_cards ADD COLUMN IF NOT EXISTS material_type TEXT DEFAULT 'Zirconia';

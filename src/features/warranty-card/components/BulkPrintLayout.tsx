@@ -12,6 +12,7 @@ export interface BulkPrintCardData {
     validTill: string
     authorisedCode: string
     clinicName: string
+    materialType: string
   }
   mode: 'main' | 'custom'
   clinicName?: string

@@ -234,6 +234,7 @@ export default function WarrantyCardPage() {
             warranty: card.warranty || '',
             validTill: card.valid_till || '',
             authorisedCode: card.authorised_code || '',
+            materialType: card.material_type || 'Zirconia',
             clinicName: clinicName || '',
           }}
           labDetails={{
@@ -304,6 +305,7 @@ export default function WarrantyCardPage() {
           warranty: card.warranty || '',
           validTill: card.valid_till || '',
           authorisedCode: card.authorised_code || '',
+          materialType: card.material_type || 'Zirconia',
           clinicName: clinicName || '',
         }}
         labDetails={{
@@ -410,6 +412,7 @@ export default function WarrantyCardPage() {
             warranty: card.warranty || '',
             validTill: card.valid_till || '',
             authorisedCode: card.authorised_code || '',
+            materialType: card.material_type || 'Zirconia',
             clinicName: clinicName || '',
           },
           mode,
@@ -685,6 +688,7 @@ export default function WarrantyCardPage() {
             warranty: configCard.warranty || '',
             validTill: configCard.valid_till || '',
             authorisedCode: configCard.authorised_code || '',
+            materialType: configCard.material_type || 'Zirconia',
             clinicName: configCard.clinic_name || '',
           }}
         />

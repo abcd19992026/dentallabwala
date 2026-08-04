@@ -556,6 +556,7 @@ export default function DoctorLedgerPage() {
                       <th className="border border-slate-300 p-2 text-left">Patient Name</th>
                       <th className="border border-slate-300 p-2 text-left">Work</th>
                       <th className="border border-slate-300 p-2 text-center">Tooth No.</th>
+                      <th className="border border-slate-300 p-2 text-right">Per Unit Charge</th>
                       <th className="border border-slate-300 p-2 text-center">Unit</th>
                       <th className="border border-slate-300 p-2 text-right">Billing Amount</th>
                       <th className="border border-slate-300 p-2 text-center">Delivery Date</th>
@@ -566,7 +567,7 @@ export default function DoctorLedgerPage() {
                   <tbody>
                     {supplies.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="p-6 text-center text-slate-500 italic">
+                        <td colSpan={12} className="p-6 text-center text-slate-500 italic">
                           No supply entries recorded yet. Click "Add Supply" above to add work entries.
                         </td>
                       </tr>
@@ -590,6 +591,9 @@ export default function DoctorLedgerPage() {
                           </td>
                           <td className="border border-slate-300 p-2 text-center">
                             {item.tooth_no || '-'}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-right font-mono font-semibold">
+                            ₹{formatCurrency(item.per_unit_charge)}
                           </td>
                           <td className="border border-slate-300 p-2 text-center font-semibold">
                             {item.unit_count}

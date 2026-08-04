@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
-import type { WarrantyCard, WarrantyCardFormData } from '../types/warrantyCard.types'
+import { MATERIAL_TYPES } from '../types/warrantyCard.types'
+import type { MaterialType, WarrantyCard, WarrantyCardFormData } from '../types/warrantyCard.types'
 
 interface GenerateCardModalProps {
   isOpen: boolean
@@ -27,7 +28,7 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType, edi
   const [issueDate, setIssueDate] = useState(today)
   const [warrantyYears, setWarrantyYears] = useState(1)
   const [validTill, setValidTill] = useState(calcValidTill(today, 1))
-  const [authorisedCode, setAuthorisedCode] = useState('')
+  const [materialType, setMaterialType] = useState<MaterialType>('Zirconia')
   const [clinicName, setClinicName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +48,7 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType, edi
       setIssueDate(editingCard.issue_date || today)
       setWarrantyYears(years)
       setValidTill(editingCard.valid_till || calcValidTill(editingCard.issue_date, years))
-      setAuthorisedCode(editingCard.authorised_code || '')
+      setMaterialType((editingCard.material_type as MaterialType) || 'Zirconia')
       setClinicName(editingCard.clinic_name || '')
     } else {
       setLabDentist('')
@@ -57,7 +58,7 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType, edi
       setIssueDate(today)
       setWarrantyYears(1)
       setValidTill(calcValidTill(today, 1))
-      setAuthorisedCode('')
+      setMaterialType('Zirconia')
       setClinicName('')
     }
   }, [isOpen, editingCard, today])
@@ -88,7 +89,8 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType, edi
         issue_date: issueDate,
         valid_till: validTill,
         warranty: String(warrantyYears),
-        authorised_code: authorisedCode,
+        authorised_code: '',
+        material_type: materialType,
         clinic_name: generationType === 'custom' && clinicName.trim() ? clinicName.trim() : null,
       }, editingCard?.id)
       setSuccess(editingCard ? 'Warranty card updated successfully.' : 'Warranty card generated successfully.')
@@ -210,15 +212,19 @@ export function GenerateCardModal({ isOpen, onClose, onSave, generationType, edi
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-300 mb-1">Authorised Code</label>
-              <input
-                type="text"
-                value={authorisedCode}
-                onChange={(e) => setAuthorisedCode(e.target.value)}
-                placeholder="Enter authorised code manually"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              <label className="block text-xs font-medium text-slate-300 mb-1">Material Type</label>
+              <select
+                value={materialType}
+                onChange={(e) => setMaterialType(e.target.value as MaterialType)}
                 required
-              />
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                {MATERIAL_TYPES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.value}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {generationType === 'custom' && (

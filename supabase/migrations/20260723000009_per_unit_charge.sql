@@ -1,0 +1,1 @@
+ALTER TABLE public.doctor_supplies ADD COLUMN IF NOT EXISTS per_unit_charge NUMERIC(12, 2) NOT NULL DEFAULT 0.00;

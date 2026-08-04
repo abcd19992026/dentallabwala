@@ -20,8 +20,8 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
   const [patientName, setPatientName] = useState('')
   const [workDescription, setWorkDescription] = useState('')
   const [toothNo, setToothNo] = useState('')
+  const [perUnitCharge, setPerUnitCharge] = useState('')
   const [unitCount, setUnitCount] = useState('1')
-  const [billingAmount, setBillingAmount] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
   const [remarks, setRemarks] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -36,8 +36,8 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
       setPatientName(editingSupply.patient_name || '')
       setWorkDescription(editingSupply.work_description || '')
       setToothNo(editingSupply.tooth_no || '')
+      setPerUnitCharge(editingSupply.per_unit_charge ? String(editingSupply.per_unit_charge) : '')
       setUnitCount(String(editingSupply.unit_count || 1))
-      setBillingAmount(editingSupply.billing_amount ? String(editingSupply.billing_amount) : '')
       setDeliveryDate(editingSupply.delivery_date || '')
       setRemarks(editingSupply.remarks || '')
     } else {
@@ -47,14 +47,18 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
       setPatientName('')
       setWorkDescription('')
       setToothNo('')
+      setPerUnitCharge('')
       setUnitCount('1')
-      setBillingAmount('')
       setDeliveryDate('')
       setRemarks('')
     }
   }, [isOpen, editingSupply, today])
 
   if (!isOpen) return null
+
+  // Auto-calculated Billing Amount = Per Unit Charge × Unit
+  const computedBillingAmount =
+    (parseFloat(perUnitCharge) || 0) * (parseInt(unitCount, 10) || 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,8 +71,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
         patient_name: patientName,
         work_description: workDescription,
         tooth_no: toothNo,
+        per_unit_charge: parseFloat(perUnitCharge) || 0,
         unit_count: unitCount ? parseInt(unitCount, 10) : 1,
-        billing_amount: billingAmount ? parseFloat(billingAmount) : 0,
+        billing_amount: computedBillingAmount,
         delivery_date: deliveryDate || null,
         remarks,
       }, editingSupply?.id)
@@ -79,13 +84,13 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
       setPatientName('')
       setWorkDescription('')
       setToothNo('')
+      setPerUnitCharge('')
       setUnitCount('1')
-      setBillingAmount('')
       setDeliveryDate('')
       setRemarks('')
       onClose()
     } catch (err) {
-      console.error('Error saving supply entry:', err)
+      console.error('Failed to save supply entry:', err)
     } finally {
       setIsSubmitting(false)
     }
@@ -178,7 +183,7 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
                 Tooth Number
@@ -188,6 +193,20 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
                 value={toothNo}
                 onChange={(e) => setToothNo(e.target.value)}
                 placeholder="11, 12, 46"
+                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Per Unit Charge (₹)
+              </label>
+              <input
+                type="number"
+                step="any"
+                min="0"
+                value={perUnitCharge}
+                onChange={(e) => setPerUnitCharge(e.target.value)}
+                placeholder="0.00"
                 className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -210,10 +229,10 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
               <input
                 type="number"
                 step="any"
-                value={billingAmount}
-                onChange={(e) => setBillingAmount(e.target.value)}
+                value={computedBillingAmount || ''}
+                readOnly
                 placeholder="0.00"
-                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 bg-slate-100 focus:outline-none cursor-default"
               />
             </div>
           </div>

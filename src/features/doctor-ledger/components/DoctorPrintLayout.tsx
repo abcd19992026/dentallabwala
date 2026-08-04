@@ -159,6 +159,7 @@ export function DoctorPrintLayout({
               <th className="border border-black px-2 py-1 text-left">PATIENT NAME</th>
               <th className="border border-black px-2 py-1 text-left">WORK</th>
               <th className="border border-black px-1.5 py-1 text-center w-16">TOOTH NO.</th>
+              <th className="border border-black px-1.5 py-1 text-right w-20">PER UNIT CHARGE</th>
               <th className="border border-black px-1.5 py-1 text-center w-12">UNIT</th>
               <th className="border border-black px-2 py-1 text-right w-24">BILLING AMOUNT</th>
               <th className="border border-black px-2 py-1 text-right w-28">GRAND TOTAL AMOUNT</th>
@@ -168,7 +169,7 @@ export function DoctorPrintLayout({
           <tbody>
             {filteredSupplies.length === 0 ? (
               <tr>
-                <td colSpan={10} className="border border-black px-4 py-4 text-center text-slate-500 italic">
+                <td colSpan={11} className="border border-black px-4 py-4 text-center text-slate-500 italic">
                   No work entries for the selected period.
                 </td>
               </tr>
@@ -192,6 +193,9 @@ export function DoctorPrintLayout({
                   </td>
                   <td className="border border-black px-1.5 py-1 text-center">
                     {item.tooth_no}
+                  </td>
+                  <td className="border border-black px-1.5 py-1 text-right font-mono">
+                    Rs. {formatCurrency(item.per_unit_charge)}
                   </td>
                   <td className="border border-black px-1.5 py-1 text-center font-semibold">
                     {item.unit_count}

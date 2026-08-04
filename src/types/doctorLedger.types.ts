@@ -19,6 +19,7 @@ export interface DoctorSupply {
   patient_name: string
   work_description: string
   tooth_no: string
+  per_unit_charge: number
   unit_count: number
   billing_amount: number
   delivery_date: string | null

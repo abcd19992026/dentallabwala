@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { FieldConfig } from '../types/templateConfig.types'
 import { DEFAULT_FIELD_CONFIGS, FIELD_KEYS } from '../types/templateConfig.types'
+import { getMaterialContent } from '../types/warrantyCard.types'
 
 interface WarrantyCardPrintLayoutProps {
   mode: 'main' | 'custom'
@@ -15,6 +16,7 @@ interface WarrantyCardPrintLayoutProps {
     validTill: string
     authorisedCode: string
     clinicName: string
+    materialType: string
   }
   labDetails: {
     labName: string
@@ -32,7 +34,11 @@ interface WarrantyCardPrintLayoutProps {
   singleFace?: boolean
 }
 
-function useSvgWithReplacement(url: string, replacements: Record<string, string>) {
+function useSvgWithReplacement(
+  url: string,
+  replacements: Record<string, string>,
+  literalReplacements?: Record<string, string>,
+) {
   const [content, setContent] = useState<string | null>(null)
 
   useEffect(() => {
@@ -49,11 +55,16 @@ function useSvgWithReplacement(url: string, replacements: Record<string, string>
         for (const [key, val] of Object.entries(replacements)) {
           modified = modified.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val)
         }
+        if (literalReplacements) {
+          for (const [key, val] of Object.entries(literalReplacements)) {
+            modified = modified.split(key).join(val)
+          }
+        }
         setContent(modified)
       })
       .catch(() => setContent(null))
     return () => { cancelled = true }
-  }, [url, JSON.stringify(replacements)])
+  }, [url, JSON.stringify(replacements), JSON.stringify(literalReplacements || {})])
 
   return content
 }
@@ -107,6 +118,7 @@ export function CardFace({
   templateUrl,
   isBack,
   replacements,
+  literalReplacements,
   cardData,
   fieldConfigs,
   isCustomBack,
@@ -116,14 +128,16 @@ export function CardFace({
   templateUrl: string
   isBack?: boolean
   replacements?: Record<string, string>
+  literalReplacements?: Record<string, string>
   cardData: WarrantyCardPrintLayoutProps['cardData']
   fieldConfigs?: Record<string, FieldConfig>
   isCustomBack?: boolean
   clinicName?: string
   visibleFieldKeys?: string[]
 }) {
-  const svgContent = useSvgWithReplacement(templateUrl, replacements || {})
+  const svgContent = useSvgWithReplacement(templateUrl, replacements || {}, literalReplacements)
   const isSvg = templateUrl?.toLowerCase().endsWith('.svg')
+  const material = getMaterialContent(cardData.materialType)
 
   const fieldValues: Record<string, string> = {
     sl_no: `${cardData.serialNo}`,
@@ -177,14 +191,42 @@ export function CardFace({
             </span>
           )
         ) : (
-          (visibleFieldKeys || FIELD_KEYS).map((key) => {
-            const cfg = getMerged(fieldConfigs, key)
-            return (
-              <span key={key} style={fieldStyle(cfg)}>
-                {fieldValues[key]}
+          <>
+            {/* Material red heading + blue text (center aligned) */}
+            <div style={{ position: 'absolute', left: 0, top: '172px', width: '100%', textAlign: 'center' }}>
+              <span
+                style={{
+                  color: '#DC2626',
+                  fontWeight: 700,
+                  fontSize: '9px',
+                  textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {material.heading}
               </span>
-            )
-          })
+            </div>
+            <div style={{ position: 'absolute', left: 0, top: '186px', width: '100%', textAlign: 'center' }}>
+              <span
+                style={{
+                  color: '#1D4ED8',
+                  fontSize: '8px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {material.text}
+              </span>
+            </div>
+
+            {(visibleFieldKeys || FIELD_KEYS).map((key) => {
+              const cfg = getMerged(fieldConfigs, key)
+              return (
+                <span key={key} style={fieldStyle(cfg)}>
+                  {fieldValues[key]}
+                </span>
+              )
+            })}
+          </>
         )}
       </div>
     </div>
@@ -199,6 +241,13 @@ export function WarrantyCardPrintLayout(props: WarrantyCardPrintLayoutProps) {
   const backReplacements = props.mode === 'custom' && props.clinicName
     ? { CLINIC_NAME: props.clinicName }
     : undefined
+
+  // Replace the literal material name (e.g. "Zirconia") on the back side
+  const backLiteralReplacements =
+    props.cardData.materialType &&
+    props.cardData.materialType.toLowerCase() !== 'zirconia'
+      ? { Zirconia: props.cardData.materialType }
+      : undefined
 
   const printCss = `
     @media print {
@@ -234,6 +283,7 @@ export function WarrantyCardPrintLayout(props: WarrantyCardPrintLayoutProps) {
           templateUrl={props.templates.backUrl}
           isBack={true}
           replacements={backReplacements}
+          literalReplacements={backLiteralReplacements}
           cardData={props.cardData}
           fieldConfigs={props.backFieldConfigs || props.fieldConfigs}
           isCustomBack={props.mode === 'custom'}
