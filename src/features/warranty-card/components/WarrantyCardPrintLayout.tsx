@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { FieldConfig } from '../types/templateConfig.types'
-import { DEFAULT_FIELD_CONFIGS, FIELD_KEYS } from '../types/templateConfig.types'
+import { DEFAULT_FIELD_CONFIGS, FIELD_KEYS, materialTextVariantKey, taglineVariantKey } from '../types/templateConfig.types'
 import { getMaterialContent } from '../types/warrantyCard.types'
 
 interface WarrantyCardPrintLayoutProps {
@@ -114,6 +114,40 @@ function getMerged(fieldConfigs: Record<string, FieldConfig> | undefined, key: s
   }
 }
 
+/**
+ * Resolves the Material Text field position for the selected material.
+ * Prefers the material-specific saved variant (material_text_<material>),
+ * then falls back to the generic material_text config, then the default.
+ * Only the position (left/top) differs per material; styling is shared.
+ */
+function getMaterialTextConfig(
+  fieldConfigs: Record<string, FieldConfig> | undefined,
+  materialType: string,
+) {
+  const base = getMerged(fieldConfigs, 'material_text')
+  const variant = fieldConfigs?.[materialTextVariantKey(materialType)]
+  return variant
+    ? { ...base, left: variant.left, top: variant.top }
+    : base
+}
+
+/**
+ * Resolves the Tagline field position for the selected material.
+ * Prefers the material-specific saved variant (tagline_<material>),
+ * then falls back to the generic tagline config, then the default.
+ * Only the position (left/top) differs per material; styling is shared.
+ */
+function getTaglineConfig(
+  fieldConfigs: Record<string, FieldConfig> | undefined,
+  materialType: string,
+) {
+  const base = getMerged(fieldConfigs, 'tagline')
+  const variant = fieldConfigs?.[taglineVariantKey(materialType)]
+  return variant
+    ? { ...base, left: variant.left, top: variant.top }
+    : base
+}
+
 export function CardFace({
   templateUrl,
   isBack,
@@ -200,27 +234,50 @@ export function CardFace({
           </>
         ) : (
           <>
+            {(() => {
+              // [DEBUG] Trace resolved Material Text & Tagline for this card
+              console.log('--------------------------------')
+              console.log('PRINT')
+              console.log('Card Material:', cardData.materialType)
+              console.log('Resolved Tagline Key:', taglineVariantKey(cardData.materialType))
+              console.log('Resolved Material Text Key:', materialTextVariantKey(cardData.materialType))
+              console.log('FIELD CONFIGS FULL', fieldConfigs)
+              console.log('DMLS TAGLINE', fieldConfigs?.tagline_dmls)
+              console.log('DMLS MATERIAL', fieldConfigs?.material_text_dmls)
+              console.log('FIELD CONFIG KEYS', Object.keys(fieldConfigs || {}))
+              console.log('Resolved Tagline Position:', getTaglineConfig(fieldConfigs, cardData.materialType))
+              console.log('Resolved Material Position:', getMaterialTextConfig(fieldConfigs, cardData.materialType))
+              console.log('--------------------------------')
+              return null
+            })()}
             {(visibleFieldKeys || FIELD_KEYS)
               .filter((key) => key !== 'material_name')
               .map((key) => {
-              const cfg = getMerged(fieldConfigs, key)
-              const style = {
-                ...fieldStyle(cfg),
-                color:
-                  !isBack && key === 'clinic_name'
-                    ? '#0B3D91'
-                    : key === 'tagline'
-                      ? '#DC2626'
-                      : key === 'material_text'
-                        ? '#1D4ED8'
-                        : '#111',
-              }
-              return (
-                <span key={key} style={style}>
-                  {fieldValues[key]}
-                </span>
-              )
-            })}
+                const cfg = key === 'material_text'
+                  ? getMaterialTextConfig(fieldConfigs, cardData.materialType)
+                  : key === 'tagline'
+                    ? getTaglineConfig(fieldConfigs, cardData.materialType)
+                    : getMerged(fieldConfigs, key)
+                if (key === 'tagline' || key === 'material_text') {
+                  console.log('FIELD', key, cfg)
+                }
+                const style = {
+                  ...fieldStyle(cfg),
+                  color:
+                    !isBack && key === 'clinic_name'
+                      ? '#0B3D91'
+                      : key === 'tagline'
+                        ? '#DC2626'
+                        : key === 'material_text'
+                          ? '#1D4ED8'
+                          : '#111',
+                }
+                return (
+                  <span key={key} style={style}>
+                    {fieldValues[key]}
+                  </span>
+                )
+              })}
           </>
         )}
       </div>

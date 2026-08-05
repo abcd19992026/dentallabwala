@@ -27,6 +27,15 @@ export async function getTemplateConfig(
   for (const [key, defaultConfig] of Object.entries(DEFAULT_FIELD_CONFIGS)) {
     merged[key] = { ...defaultConfig, ...(data.config.fields[key] || {}) }
   }
+
+  // Preserve per-material positions (material_text_* and tagline_*) so they
+  // can be resolved independently for each material during print/PDF.
+  for (const [key, cfg] of Object.entries(data.config.fields)) {
+    if ((key.startsWith('material_text_') || key.startsWith('tagline_')) && cfg) {
+      merged[key] = cfg as FieldConfig
+    }
+  }
+
   return merged
 }
 

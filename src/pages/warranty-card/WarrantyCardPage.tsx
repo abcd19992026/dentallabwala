@@ -178,10 +178,16 @@ export default function WarrantyCardPage() {
     // Fetch saved field configuration for this template
     const templateKey: TemplateKey = mode === 'main' ? 'template_a_front' : 'template_b_front'
     const fieldConfigs = await getTemplateConfig(effectiveLabId, templateKey)
+    console.log('AFTER FETCH')
+    console.log(Object.keys(fieldConfigs))
+    console.log(fieldConfigs['tagline_dmls'])
+    console.log(fieldConfigs['material_text_dmls'])
+    console.log('PRINT FETCH CONFIG')
+    console.log(Object.keys(fieldConfigs))
+    console.log(fieldConfigs['tagline_dmls'])
+    console.log(fieldConfigs['material_text_dmls'])
     const backKey: TemplateKey = mode === 'main' ? 'template_a_back' : 'template_b_back'
-    const backFieldConfigs = mode === 'custom'
-      ? await getTemplateConfig(effectiveLabId, backKey)
-      : undefined
+    const backFieldConfigs = await getTemplateConfig(effectiveLabId, backKey)
 
     if (action === 'print') {
       // --- PRINT: Open a new window with only the card ---
@@ -398,9 +404,7 @@ export default function WarrantyCardPage() {
         const templateKey: TemplateKey = mode === 'main' ? 'template_a_front' : 'template_b_front'
         const fieldConfigs: Record<string, FieldConfig> = await getTemplateConfig(effectiveLabId, templateKey)
         const backKey: TemplateKey = mode === 'main' ? 'template_a_back' : 'template_b_back'
-        const backFieldConfigs = mode === 'custom'
-          ? await getTemplateConfig(effectiveLabId, backKey)
-          : undefined
+        const backFieldConfigs = await getTemplateConfig(effectiveLabId, backKey)
 
         printCards.push({
           cardData: {
@@ -589,34 +593,34 @@ export default function WarrantyCardPage() {
                     <td className="px-5 py-4">{formatDate(card.valid_till)}</td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleEditCard(card)}
-                            className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
-                            title="Edit Warranty Card"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            onClick={() => handlePrintAction(card)}
-                            className="p-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors"
-                            title="Print"
-                          >
-                            <Printer size={15} />
-                          </button>
-                          <button
-                            onClick={() => openConfigure(card)}
-                            className="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-colors"
-                            title="Configure Template"
-                          >
-                            <Settings size={15} />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadAction(card)}
-                            className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-colors"
-                            title="Download PDF"
-                          >
-                            <FileDown size={15} />
-                          </button>
+                        <button
+                          onClick={() => handleEditCard(card)}
+                          className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
+                          title="Edit Warranty Card"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          onClick={() => handlePrintAction(card)}
+                          className="p-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors"
+                          title="Print"
+                        >
+                          <Printer size={15} />
+                        </button>
+                        <button
+                          onClick={() => openConfigure(card)}
+                          className="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-colors"
+                          title="Configure Template"
+                        >
+                          <Settings size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDownloadAction(card)}
+                          className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-colors"
+                          title="Download PDF"
+                        >
+                          <FileDown size={15} />
+                        </button>
                       </div>
                     </td>
                   </tr>

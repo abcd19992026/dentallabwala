@@ -61,3 +61,24 @@ export const DEFAULT_FIELD_CONFIGS: Record<string, FieldConfig> = {
 }
 
 export const FIELD_KEYS = Object.keys(DEFAULT_FIELD_CONFIGS)
+
+/** Materials that can have their own saved Material Text position */
+export const MATERIAL_TEXT_MATERIALS = ['Zirconia', 'PFM', 'DMLS']
+
+/**
+ * Storage key under which a material's own Material Text position is saved.
+ * e.g. material_text_zirconia, material_text_pfm, material_text_dmls
+ */
+export function materialTextVariantKey(materialType?: string | null): string {
+  const key = (materialType || 'Zirconia').toLowerCase()
+  return `material_text_${key}`
+}
+
+/**
+ * Storage key under which a material's own Tagline position is saved.
+ * e.g. tagline_zirconia, tagline_pfm, tagline_dmls
+ */
+export function taglineVariantKey(materialType?: string | null): string {
+  const key = (materialType || 'Zirconia').toLowerCase()
+  return `tagline_${key}`
+}
