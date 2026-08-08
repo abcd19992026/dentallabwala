@@ -78,7 +78,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Footer */}
       <div className="p-4 border-t border-slate-800 flex-shrink-0">
         <p className="text-slate-600 text-xs text-center">
-          DENTIVO · v1.0
+          DENTIVO · v19.0
         </p>
       </div>
     </aside>

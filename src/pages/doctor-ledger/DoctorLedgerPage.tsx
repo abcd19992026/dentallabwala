@@ -50,6 +50,9 @@ export default function DoctorLedgerPage() {
   // Supply being edited (null = adding new)
   const [editingSupply, setEditingSupply] = useState<DoctorSupply | null>(null)
 
+  // Payment being edited (null = adding new)
+  const [editingPayment, setEditingPayment] = useState<DoctorPayment | null>(null)
+
   // Doctor being edited (null = adding new)
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null)
 
@@ -212,15 +215,41 @@ export default function DoctorLedgerPage() {
   }
 
   const handleSavePayment = async (
-    paymentData: Omit<DoctorPayment, 'id' | 'lab_id' | 'doctor_id'>
+    paymentData: Omit<DoctorPayment, 'id' | 'lab_id' | 'doctor_id'>,
+    paymentId?: string
   ) => {
     if (!activeDoctor) return
-    const created = await doctorLedgerService.addPayment(
-      effectiveLabId,
-      activeDoctor.id,
-      paymentData
-    )
-    setPayments((prev) => [created, ...prev])
+
+    if (paymentId) {
+      // Edit mode: update existing record in place (position unchanged)
+      const updated = await doctorLedgerService.updatePayment(
+        effectiveLabId,
+        paymentId,
+        paymentData
+      )
+      if (updated) {
+        setPayments((prev) => prev.map((p) => (p.id === paymentId ? updated : p)))
+      }
+    } else {
+      // Add mode: prepend new record to the top
+      const created = await doctorLedgerService.addPayment(
+        effectiveLabId,
+        activeDoctor.id,
+        paymentData
+      )
+      setPayments((prev) => [created, ...prev])
+    }
+  }
+
+  const openEditPayment = (payment: DoctorPayment) => {
+    setEditingPayment(payment)
+    setIsAddPaymentOpen(true)
+  }
+
+  const handleDeletePayment = async (payment: DoctorPayment) => {
+    if (!window.confirm('Are you sure you want to delete this payment entry?')) return
+    await doctorLedgerService.deletePayment(payment.id)
+    setPayments((prev) => prev.filter((p) => p.id !== payment.id))
   }
 
   const handleGeneratePrint = async () => {
@@ -305,16 +334,6 @@ export default function DoctorLedgerPage() {
     }
   }
 
-  const handleDeleteDoctor = async (doctor: Doctor, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!window.confirm(`Are you sure you want to delete doctor "${doctor.name}"?`)) return
-    if (activeDoctor?.id === doctor.id) {
-      setActiveDoctor(null)
-    }
-    await doctorLedgerService.deleteDoctor(doctor.id)
-    setDoctors((prev) => prev.filter((d) => d.id !== doctor.id))
-  }
-
   const handleDeleteSupply = async (supply: DoctorSupply) => {
     if (!window.confirm('Are you sure you want to delete this supply entry?')) return
     await doctorLedgerService.deleteSupply(supply.id)
@@ -392,19 +411,11 @@ export default function DoctorLedgerPage() {
                       e.stopPropagation()
                       handleEditDoctor(doc)
                     }}
-                    className="absolute top-2 right-10 text-blue-600 hover:text-blue-800 transition-colors"
+                    className="absolute top-2.5 right-2.5 text-blue-600 hover:text-blue-800 transition-colors"
                     title="Edit Doctor"
                     type="button"
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteDoctor(doc, e)}
-                    className="absolute top-2 right-2 text-red-400 hover:text-red-700 transition-colors"
-                    title="Delete Doctor"
-                    type="button"
-                  >
-                    <Trash2 className="w-4 h-4" />
                   </button>
                   <h3 className="font-bold text-base text-slate-900 uppercase">
                     {doc.name || 'Unnamed Doctor'}
@@ -651,7 +662,10 @@ export default function DoctorLedgerPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-base text-slate-800">Payment History</h3>
                 <button
-                  onClick={() => setIsAddPaymentOpen(true)}
+                  onClick={() => {
+                    setEditingPayment(null)
+                    setIsAddPaymentOpen(true)
+                  }}
                   className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded text-sm transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -668,12 +682,13 @@ export default function DoctorLedgerPage() {
                       <th className="border border-slate-300 p-2 text-right">Amount</th>
                       <th className="border border-slate-300 p-2 text-center">Payment Mode</th>
                       <th className="border border-slate-300 p-2 text-left">Remarks</th>
+                      <th className="border border-slate-300 p-2 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {payments.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-6 text-center text-slate-500 italic">
+                        <td colSpan={5} className="p-6 text-center text-slate-500 italic">
                           No payment entries recorded yet. Click "Add Payment" above.
                         </td>
                       </tr>
@@ -691,6 +706,26 @@ export default function DoctorLedgerPage() {
                           </td>
                           <td className="border border-slate-300 p-2 text-slate-600">
                             {p.remarks || '-'}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openEditPayment(p)}
+                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                                title="Edit Payment"
+                                type="button"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePayment(p)}
+                                className="text-red-400 hover:text-red-700 transition-colors"
+                                title="Delete Payment"
+                                type="button"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -798,8 +833,12 @@ export default function DoctorLedgerPage() {
 
           <AddPaymentModal
             isOpen={isAddPaymentOpen}
-            onClose={() => setIsAddPaymentOpen(false)}
+            onClose={() => {
+              setIsAddPaymentOpen(false)
+              setEditingPayment(null)
+            }}
             onSave={handleSavePayment}
+            editingPayment={editingPayment}
           />
         </>
       )}

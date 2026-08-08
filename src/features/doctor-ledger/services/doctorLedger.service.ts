@@ -603,4 +603,142 @@ export const doctorLedgerService = {
 
     return newPayment
   },
+
+  /**
+   * Update an existing payment entry (does not change its position/order)
+   */
+  async updatePayment(
+    labId: string,
+    paymentId: string,
+    paymentData: Omit<DoctorPayment, 'id' | 'lab_id' | 'doctor_id'>
+  ): Promise<DoctorPayment> {
+    const local = getLocalPayments()
+    const existing = local.find((p) => p.id === paymentId)
+
+    const merged: DoctorPayment = {
+      ...(existing as DoctorPayment),
+      id: paymentId,
+      lab_id: labId,
+      payment_date: paymentData.payment_date || existing?.payment_date || new Date().toISOString().split('T')[0],
+      amount: Number(paymentData.amount) || Number(existing?.amount) || 0,
+      payment_mode: (paymentData.payment_mode || existing?.payment_mode || 'Cash') as DoctorPayment['payment_mode'],
+      remarks: paymentData.remarks?.trim() ?? existing?.remarks ?? '',
+    }
+
+    const idx = local.findIndex((p) => p.id === paymentId)
+    if (idx !== -1) {
+      local[idx] = merged
+    } else {
+      local.unshift(merged)
+    }
+    saveLocalPayments(local)
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('doctor_payments')
+          .update({
+            payment_date: merged.payment_date,
+            amount: merged.amount,
+            payment_mode: merged.payment_mode,
+            remarks: merged.remarks,
+          })
+          .eq('id', paymentId)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Supabase updatePayment error:', error)
+        } else if (data) {
+          return {
+            id: data.id,
+            lab_id: data.lab_id,
+            doctor_id: data.doctor_id,
+            payment_date: data.payment_date,
+            amount: Number(data.amount) || 0,
+            payment_mode: (data.payment_mode || 'Cash') as DoctorPayment['payment_mode'],
+            remarks: data.remarks || '',
+            created_at: data.created_at,
+          }
+        }
+      } catch (err) {
+        console.error('Supabase updatePayment exception:', err)
+      }
+    }
+
+    return merged
+  },
+
+  /**
+   * Delete a payment entry
+   */
+  async deletePayment(paymentId: string): Promise<void> {
+    const local = getLocalPayments()
+    const updated = local.filter((p) => p.id !== paymentId)
+    saveLocalPayments(updated)
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('doctor_payments').delete().eq('id', paymentId)
+      } catch (err) {
+        console.error('Supabase delete payment error:', err)
+      }
+    }
+  },
+}
+
+/**
+ * Per-lab doctor counts for Super Admin dashboard
+ * (total doctors + doctors created this calendar month).
+ */
+export async function getDoctorCounts(labIds: string[]): Promise<Record<string, { total: number; thisMonth: number }>> {
+  if (!isSupabaseConfigured || labIds.length === 0) return {}
+
+  const now = new Date()
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const { data, error } = await supabase
+    .from('doctors')
+    .select('lab_id, created_at')
+    .in('lab_id', labIds)
+
+  if (error) throw error
+
+  const result: Record<string, { total: number; thisMonth: number }> = {}
+  for (const id of labIds) result[id] = { total: 0, thisMonth: 0 }
+
+  for (const row of data || []) {
+    const r = result[row.lab_id]
+    if (r) {
+      r.total++
+      if (row.created_at && row.created_at.slice(0, 7) === monthPrefix) {
+        r.thisMonth++
+      }
+    }
+  }
+
+  return result
+}
+
+/**
+ * Global doctor counts for Super Admin dashboard
+ * (doctors across all labs, and created this calendar month).
+ */
+export async function getGlobalDoctorCounts(): Promise<{ total: number; thisMonth: number }> {
+  if (!isSupabaseConfigured) return { total: 0, thisMonth: 0 }
+
+  const now = new Date()
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const { data, error } = await supabase
+    .from('doctors')
+    .select('created_at')
+
+  if (error) throw error
+
+  const doctors = data || []
+  const total = doctors.length
+  const thisMonth = doctors.filter((d) => d.created_at?.slice(0, 7) === monthPrefix).length
+
+  return { total, thisMonth }
 }

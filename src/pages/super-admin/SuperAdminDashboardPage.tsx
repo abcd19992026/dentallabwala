@@ -12,6 +12,7 @@ import {
   LogOut,
   FileCheck,
   Trash2,
+  Stethoscope,
 } from 'lucide-react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import type { DentalLabClient, CreateClientInput } from '@/features/super-admin/types/client'
@@ -23,6 +24,10 @@ import {
   resetClientPassword,
   deleteClient,
 } from '@/features/super-admin/services/client.service'
+import {
+  getGlobalDoctorCounts,
+  getDoctorCounts,
+} from '@/features/doctor-ledger/services/doctorLedger.service'
 import { ClientModal } from '@/features/super-admin/components/ClientModal'
 import { ResetPasswordModal } from '@/features/super-admin/components/ResetPasswordModal'
 import { getGlobalWarrantyCardCounts, getWarrantyCardCounts } from '@/features/warranty-card/services/warrantyCard.service'
@@ -44,6 +49,10 @@ export default function SuperAdminDashboardPage() {
   const [globalWarrantyCounts, setGlobalWarrantyCounts] = useState({ total: 0, thisMonth: 0 })
   const [perLabWarrantyCounts, setPerLabWarrantyCounts] = useState<Record<string, { total: number; thisMonth: number }>>({})
 
+  // Doctor counts
+  const [globalDoctorCounts, setGlobalDoctorCounts] = useState({ total: 0, thisMonth: 0 })
+  const [perLabDoctorCounts, setPerLabDoctorCounts] = useState<Record<string, { total: number; thisMonth: number }>>({})
+
   const loadClients = async () => {
     setLoading(true)
     try {
@@ -51,12 +60,16 @@ export default function SuperAdminDashboardPage() {
       setClients(data)
 
       const labIds = data.map((c) => c.id)
-      const [globalCounts, perLabCounts] = await Promise.all([
+      const [globalCounts, perLabCounts, doctorGlobalCounts, doctorPerLabCounts] = await Promise.all([
         getGlobalWarrantyCardCounts(),
         getWarrantyCardCounts(labIds),
+        getGlobalDoctorCounts(),
+        getDoctorCounts(labIds),
       ])
       setGlobalWarrantyCounts(globalCounts)
       setPerLabWarrantyCounts(perLabCounts)
+      setGlobalDoctorCounts(doctorGlobalCounts)
+      setPerLabDoctorCounts(doctorPerLabCounts)
     } catch (err) {
       console.error('Error loading clients:', err)
     } finally {
@@ -167,7 +180,7 @@ export default function SuperAdminDashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Labs</p>
@@ -217,6 +230,26 @@ export default function SuperAdminDashboardPage() {
               <FileCheck size={24} />
             </div>
           </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Doctors</p>
+              <p className="text-3xl font-bold text-amber-400 mt-1">{globalDoctorCounts.total}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <Stethoscope size={24} />
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Doctors This Month</p>
+              <p className="text-3xl font-bold text-teal-400 mt-1">{globalDoctorCounts.thisMonth}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+              <Stethoscope size={24} />
+            </div>
+          </div>
         </div>
 
         {/* Clients List Section */}
@@ -260,6 +293,8 @@ export default function SuperAdminDashboardPage() {
                     <th className="px-6 py-4">Template Uploaded</th>
                     <th className="px-6 py-4 text-center">Total Warranty Cards</th>
                     <th className="px-6 py-4 text-center">This Month</th>
+                    <th className="px-6 py-4 text-center">Total Doctors</th>
+                    <th className="px-6 py-4 text-center">Doctors This Month</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
@@ -310,6 +345,16 @@ export default function SuperAdminDashboardPage() {
                         {/* This Month */}
                         <td className="px-6 py-4 text-center text-sm font-semibold text-cyan-400">
                           {perLabWarrantyCounts[client.id]?.thisMonth ?? '...'}
+                        </td>
+
+                        {/* Total Doctors */}
+                        <td className="px-6 py-4 text-center text-sm font-semibold text-white">
+                          {perLabDoctorCounts[client.id]?.total ?? '...'}
+                        </td>
+
+                        {/* Doctors This Month */}
+                        <td className="px-6 py-4 text-center text-sm font-semibold text-teal-400">
+                          {perLabDoctorCounts[client.id]?.thisMonth ?? '...'}
                         </td>
 
                         {/* Status */}

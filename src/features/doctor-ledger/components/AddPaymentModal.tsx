@@ -1,20 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { DoctorPayment, PaymentMode } from '@/types/doctorLedger.types'
 
 interface AddPaymentModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (paymentData: Omit<DoctorPayment, 'id' | 'lab_id' | 'doctor_id'>) => Promise<void>
+  onSave: (paymentData: Omit<DoctorPayment, 'id' | 'lab_id' | 'doctor_id'>, paymentId?: string) => Promise<void>
+  /** Payment record being edited, if any */
+  editingPayment?: DoctorPayment | null
 }
 
-export function AddPaymentModal({ isOpen, onClose, onSave }: AddPaymentModalProps) {
+export function AddPaymentModal({ isOpen, onClose, onSave, editingPayment }: AddPaymentModalProps) {
   const today = new Date().toISOString().split('T')[0]
   const [paymentDate, setPaymentDate] = useState(today)
   const [amount, setAmount] = useState('')
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash')
   const [remarks, setRemarks] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Pre-fill form when editing, or reset when adding
+  useEffect(() => {
+    if (!isOpen) return
+    if (editingPayment) {
+      setPaymentDate(editingPayment.payment_date || today)
+      setAmount(editingPayment.amount ? String(editingPayment.amount) : '')
+      setPaymentMode(editingPayment.payment_mode || 'Cash')
+      setRemarks(editingPayment.remarks || '')
+    } else {
+      setPaymentDate(today)
+      setAmount('')
+      setPaymentMode('Cash')
+      setRemarks('')
+    }
+  }, [isOpen, editingPayment, today])
 
   if (!isOpen) return null
 
@@ -27,7 +45,7 @@ export function AddPaymentModal({ isOpen, onClose, onSave }: AddPaymentModalProp
         amount: amount ? parseFloat(amount) : 0,
         payment_mode: paymentMode,
         remarks,
-      })
+      }, editingPayment?.id)
       // Reset form
       setPaymentDate(today)
       setAmount('')
@@ -46,7 +64,9 @@ export function AddPaymentModal({ isOpen, onClose, onSave }: AddPaymentModalProp
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-lg font-bold text-slate-800">Add Payment</h3>
+          <h3 className="text-lg font-bold text-slate-800">
+            {editingPayment ? 'Edit Payment' : 'Add Payment'}
+          </h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -125,7 +145,7 @@ export function AddPaymentModal({ isOpen, onClose, onSave }: AddPaymentModalProp
               disabled={isSubmitting}
               className="px-5 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : 'Save Payment'}
+              {isSubmitting ? 'Saving...' : editingPayment ? 'Update Payment' : 'Save Payment'}
             </button>
           </div>
         </form>

@@ -165,7 +165,7 @@ export function LoginForm() {
               to="/admin/login"
               className="text-xs text-slate-400 hover:text-blue-400 transition-colors underline underline-offset-4"
             >
-              Super Admin Login
+              Super Admin
             </Link>
             <p className="text-center text-slate-600 text-xs">
               © {new Date().getFullYear()} DENTIVO. All rights reserved.
