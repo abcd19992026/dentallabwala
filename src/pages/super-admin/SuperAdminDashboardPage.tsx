@@ -30,6 +30,9 @@ import {
 } from '@/features/doctor-ledger/services/doctorLedger.service'
 import { ClientModal } from '@/features/super-admin/components/ClientModal'
 import { ResetPasswordModal } from '@/features/super-admin/components/ResetPasswordModal'
+import { BackupAllButton } from '@/features/super-admin/components/BackupAllButton'
+import { LastBackupChip } from '@/features/super-admin/components/LastBackupChip'
+import { ExportLabButtons } from '@/features/super-admin/components/ExportLabButtons'
 import { getGlobalWarrantyCardCounts, getWarrantyCardCounts } from '@/features/warranty-card/services/warrantyCard.service'
 
 export default function SuperAdminDashboardPage() {
@@ -44,6 +47,8 @@ export default function SuperAdminDashboardPage() {
 
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
   const [resetTargetClient, setResetTargetClient] = useState<DentalLabClient | null>(null)
+
+  const [backupRefreshKey, setBackupRefreshKey] = useState(0)
 
   // Warranty card counts
   const [globalWarrantyCounts, setGlobalWarrantyCounts] = useState({ total: 0, thisMonth: 0 })
@@ -161,6 +166,8 @@ export default function SuperAdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <LastBackupChip refreshKey={backupRefreshKey} />
+            <BackupAllButton onBackupComplete={() => setBackupRefreshKey((k) => k + 1)} />
             <button
               onClick={handleOpenAddModal}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-violet-600/25 cursor-pointer"
@@ -414,6 +421,9 @@ export default function SuperAdminDashboardPage() {
                             >
                               <Trash2 size={15} />
                             </button>
+
+                            {/* Export Client Data */}
+                            <ExportLabButtons client={client} />
                           </div>
                         </td>
                       </tr>
