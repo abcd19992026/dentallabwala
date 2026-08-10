@@ -336,51 +336,50 @@ export const doctorLedgerService = {
     saveLocalSupplies(local)
 
     if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('doctor_supplies')
-          .insert({
-            id: newSupply.id,
-            lab_id: newSupply.lab_id,
-            doctor_id: newSupply.doctor_id,
-            entry_date: newSupply.entry_date,
-            case_no: newSupply.case_no,
-            doctor_name: newSupply.doctor_name,
-            patient_name: newSupply.patient_name,
-            work_description: newSupply.work_description,
-            tooth_no: newSupply.tooth_no,
-            per_unit_charge: newSupply.per_unit_charge,
-            unit_count: newSupply.unit_count,
-            billing_amount: newSupply.billing_amount,
-            delivery_date: newSupply.delivery_date,
-            remarks: newSupply.remarks,
-          })
-          .select()
-          .single()
+      const { data, error } = await supabase
+        .from('doctor_supplies')
+        .insert({
+          id: newSupply.id,
+          lab_id: newSupply.lab_id,
+          doctor_id: newSupply.doctor_id,
+          entry_date: newSupply.entry_date,
+          case_no: newSupply.case_no,
+          doctor_name: newSupply.doctor_name,
+          patient_name: newSupply.patient_name,
+          work_description: newSupply.work_description,
+          tooth_no: newSupply.tooth_no,
+          per_unit_charge: newSupply.per_unit_charge,
+          unit_count: newSupply.unit_count,
+          billing_amount: newSupply.billing_amount,
+          delivery_date: newSupply.delivery_date,
+          remarks: newSupply.remarks,
+        })
+        .select()
+        .single()
 
-        if (error) {
-          console.error('Supabase addSupply error:', error)
-        } else if (data) {
-          return {
-            id: data.id,
-            lab_id: data.lab_id,
-            doctor_id: data.doctor_id,
-            entry_date: data.entry_date,
-            case_no: data.case_no || '',
-            doctor_name: data.doctor_name || '',
-            patient_name: data.patient_name || '',
-            work_description: data.work_description || '',
-            tooth_no: data.tooth_no || '',
-            per_unit_charge: Number(data.per_unit_charge) || 0,
-            unit_count: Number(data.unit_count) || 1,
-            billing_amount: Number(data.billing_amount) || 0,
-            delivery_date: data.delivery_date || null,
-            remarks: data.remarks || '',
-            created_at: data.created_at,
-          }
+      if (error) {
+        console.error('Supabase addSupply error:', error)
+        throw error
+      }
+
+      if (data) {
+        return {
+          id: data.id,
+          lab_id: data.lab_id,
+          doctor_id: data.doctor_id,
+          entry_date: data.entry_date,
+          case_no: data.case_no || '',
+          doctor_name: data.doctor_name || '',
+          patient_name: data.patient_name || '',
+          work_description: data.work_description || '',
+          tooth_no: data.tooth_no || '',
+          per_unit_charge: Number(data.per_unit_charge) || 0,
+          unit_count: Number(data.unit_count) || 1,
+          billing_amount: Number(data.billing_amount) || 0,
+          delivery_date: data.delivery_date || null,
+          remarks: data.remarks || '',
+          created_at: data.created_at,
         }
-      } catch (err) {
-        console.error('Supabase addSupply exception:', err)
       }
     }
 
@@ -424,46 +423,45 @@ export const doctorLedgerService = {
     saveLocalSupplies(local)
 
     if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('doctor_supplies')
-          .update({
-            entry_date: merged.entry_date,
-            case_no: merged.case_no,
-            doctor_name: merged.doctor_name,
-            patient_name: merged.patient_name,
-            work_description: merged.work_description,
-            tooth_no: merged.tooth_no,
-            per_unit_charge: merged.per_unit_charge,
-            unit_count: merged.unit_count,
-            billing_amount: merged.billing_amount,
-            delivery_date: merged.delivery_date,
-            remarks: merged.remarks,
-          })
-          .eq('id', supplyId)
-          .select()
-          .single()
+      const { data, error } = await supabase
+        .from('doctor_supplies')
+        .update({
+          entry_date: merged.entry_date,
+          case_no: merged.case_no,
+          doctor_name: merged.doctor_name,
+          patient_name: merged.patient_name,
+          work_description: merged.work_description,
+          tooth_no: merged.tooth_no,
+          per_unit_charge: merged.per_unit_charge,
+          unit_count: merged.unit_count,
+          billing_amount: merged.billing_amount,
+          delivery_date: merged.delivery_date,
+          remarks: merged.remarks,
+        })
+        .eq('id', supplyId)
+        .select()
+        .single()
 
-        if (error) {
-          console.error('Supabase updateSupply error:', error)
-        } else if (data) {
-          return {
-            ...merged,
-            entry_date: data.entry_date,
-            case_no: data.case_no || '',
-            doctor_name: data.doctor_name || '',
-            patient_name: data.patient_name || '',
-            work_description: data.work_description || '',
-            tooth_no: data.tooth_no || '',
-            per_unit_charge: Number(data.per_unit_charge) || 0,
-            unit_count: Number(data.unit_count) || 1,
-            billing_amount: Number(data.billing_amount) || 0,
-            delivery_date: data.delivery_date || null,
-            remarks: data.remarks || '',
-          }
+      if (error) {
+        console.error('Supabase updateSupply error:', error)
+        throw error
+      }
+
+      if (data) {
+        return {
+          ...merged,
+          entry_date: data.entry_date,
+          case_no: data.case_no || '',
+          doctor_name: data.doctor_name || '',
+          patient_name: data.patient_name || '',
+          work_description: data.work_description || '',
+          tooth_no: data.tooth_no || '',
+          per_unit_charge: Number(data.per_unit_charge) || 0,
+          unit_count: Number(data.unit_count) || 1,
+          billing_amount: Number(data.billing_amount) || 0,
+          delivery_date: data.delivery_date || null,
+          remarks: data.remarks || '',
         }
-      } catch (err) {
-        console.error('Supabase updateSupply exception:', err)
       }
     }
 

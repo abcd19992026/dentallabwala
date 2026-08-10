@@ -174,12 +174,12 @@ export function DoctorPrintLayout({
       {/* ─── DOCTOR DETAILS HEADER BAR ─── */}
       <div className="grid grid-cols-2 gap-4 border border-black p-2 mb-3 bg-slate-50 print:bg-transparent font-medium">
         <div>
-          <p><span className="font-bold">Doctor Name:</span> {doctor.name || 'N/A'}</p>
-          <p><span className="font-bold">Clinic Name:</span> {doctor.clinic_name || 'N/A'}</p>
+          <p><span className="font-bold">DOCTOR NAME :</span> {doctor.name || 'N/A'}</p>
+          <p><span className="font-bold">CLINIC NAME :</span> {doctor.clinic_name || 'N/A'}</p>
         </div>
         <div className="text-right">
-          <p><span className="font-bold">Phone:</span> {doctor.phone || 'N/A'}</p>
-          <p><span className="font-bold">Address:</span> {doctor.address || 'N/A'}</p>
+          <p><span className="font-bold">PHONE :</span> {doctor.phone || 'N/A'}</p>
+          <p><span className="font-bold">ADDRESS :</span> {doctor.address || 'N/A'}</p>
         </div>
       </div>
 

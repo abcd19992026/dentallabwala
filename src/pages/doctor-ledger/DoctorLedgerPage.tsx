@@ -572,7 +572,7 @@ export default function DoctorLedgerPage() {
                       <th className="border border-slate-300 p-2 text-center">
                         {labDetails.studio_code?.trim() ? labDetails.studio_code.trim().toUpperCase() : 'Case No.'}
                       </th>
-                      <th className="border border-slate-300 p-2 text-left">Doctor Name</th>
+                      <th className="border border-slate-300 p-2 text-left">Doctor Nam</th>
                       <th className="border border-slate-300 p-2 text-left">Patient Name</th>
                       <th className="border border-slate-300 p-2 text-left">Work</th>
                       <th className="border border-slate-300 p-2 text-center">Tooth No.</th>
