@@ -46,7 +46,7 @@ function CardPair({ card }: { card: BulkPrintCardData }) {
     : undefined
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3mm' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12mm' }}>
       <CardFace
         templateUrl={card.templates.frontUrl}
         isBack={false}
