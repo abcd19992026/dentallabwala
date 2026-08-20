@@ -46,7 +46,28 @@ export function DoctorPrintLayout({
   whatsappNumber,
   logoUrl,
 }: DoctorPrintLayoutProps) {
-  // Filter supplies & payments by date range if provided
+  // Initial Opening Balance (permanent base starting balance)
+  const initialOpeningBalance = Number(doctor.opening_balance) || 0
+
+  // Calculate work & payments prior to fromDate
+  const priorWorkAmount = supplies.reduce((sum, item) => {
+    if (fromDate && item.entry_date < fromDate) {
+      return sum + (Number(item.billing_amount) || 0)
+    }
+    return sum
+  }, 0)
+
+  const priorPaymentReceived = payments.reduce((sum, p) => {
+    if (fromDate && p.payment_date < fromDate) {
+      return sum + (Number(p.amount) || 0)
+    }
+    return sum
+  }, 0)
+
+  // Dynamic Report Opening Balance for the selected FROM DATE
+  const reportOpeningBalance = initialOpeningBalance + priorWorkAmount - priorPaymentReceived
+
+  // Filter supplies & payments for current report period
   const filteredSupplies = supplies.filter((item) => {
     if (fromDate && item.entry_date < fromDate) return false
     if (toDate && item.entry_date > toDate) return false
@@ -59,12 +80,11 @@ export function DoctorPrintLayout({
     return true
   })
 
-  // Calculations
-  const openingBalance = Number(doctor.opening_balance) || 0
+  // Calculations for current period
   const totalWorkAmount = filteredSupplies.reduce((sum, s) => sum + (Number(s.billing_amount) || 0), 0)
   const totalUnits = filteredSupplies.reduce((sum, s) => sum + (Number(s.unit_count) || 0), 0)
   const totalPaymentReceived = filteredPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
-  const finalDueAmount = openingBalance + totalWorkAmount - totalPaymentReceived
+  const finalDueAmount = reportOpeningBalance + totalWorkAmount - totalPaymentReceived
 
   const fromFormatted = fromDate ? formatDate(fromDate) : '____'
   const toFormatted = toDate ? formatDate(toDate) : '____'
@@ -279,7 +299,7 @@ export function DoctorPrintLayout({
             <span className="font-mono">Rs. {formatCurrency(totalPaymentReceived)}/-</span>
           </div>
           <div className="pt-1 text-xs text-black font-medium">
-            i.e. Rs. {formatCurrency(openingBalance)} + Rs. {formatCurrency(totalWorkAmount)} - Rs. {formatCurrency(totalPaymentReceived)} = Rs. {formatCurrency(finalDueAmount)}/- (Till {toFormatted})
+            i.e. Rs. {formatCurrency(reportOpeningBalance)} + Rs. {formatCurrency(totalWorkAmount)} - Rs. {formatCurrency(totalPaymentReceived)} = Rs. {formatCurrency(finalDueAmount)}/- (Till {toFormatted})
           </div>
         </div>
 
@@ -290,7 +310,7 @@ export function DoctorPrintLayout({
           </h4>
           <div className="flex justify-between py-0.5 border-b border-slate-300">
             <span className="font-semibold text-black">Opening Balance:</span>
-            <span className="font-mono font-bold">Rs. {formatCurrency(openingBalance)}/-</span>
+            <span className="font-mono font-bold">Rs. {formatCurrency(reportOpeningBalance)}/-</span>
           </div>
 
           <div className="flex justify-between py-0.5 border-b border-slate-300">

@@ -136,7 +136,7 @@ export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDo
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Opening Balance (₹)
+              Initial Opening Balance (₹)
             </label>
             <input
               type="number"

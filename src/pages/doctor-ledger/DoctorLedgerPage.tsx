@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Search, ArrowLeft, Printer, Trash2, Pencil } from 'lucide-react'
+import { Plus, Search, ArrowLeft, Printer, Trash2, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
 import { doctorLedgerService } from '@/features/doctor-ledger/services/doctorLedger.service'
@@ -159,6 +159,67 @@ export default function DoctorLedgerPage() {
       currentBalance,
     }
   }, [activeDoctor, supplies, payments])
+
+  // Collapsed state tracking for month-grouped Payment History
+  const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
+
+  // Group payment records by Month-Year (chronologically oldest to newest, with payments inside also oldest to newest)
+  const groupedPayments = useMemo(() => {
+    if (!payments.length) return []
+
+    // Sort all payments chronologically (oldest date first)
+    const sorted = [...payments].sort((a, b) => {
+      const dateA = a.payment_date || ''
+      const dateB = b.payment_date || ''
+      if (dateA !== dateB) return dateA.localeCompare(dateB)
+      return (a.created_at || '').localeCompare(b.created_at || '')
+    })
+
+    // Group by month key "YYYY-MM"
+    const groupsMap = new Map<string, { monthKey: string; monthLabel: string; items: DoctorPayment[]; totalAmount: number }>()
+
+    for (const p of sorted) {
+      let monthKey = 'Unknown'
+      let monthLabel = 'Unknown Month'
+
+      if (p.payment_date && p.payment_date.includes('-')) {
+        const parts = p.payment_date.split('-')
+        if (parts.length === 3) {
+          const [y, m] = parts
+          monthKey = `${y}-${m}`
+          const dateObj = new Date(Number(y), Number(m) - 1, 1)
+          monthLabel = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
+        }
+      }
+
+      if (!groupsMap.has(monthKey)) {
+        groupsMap.set(monthKey, {
+          monthKey,
+          monthLabel,
+          items: [],
+          totalAmount: 0,
+        })
+      }
+
+      const group = groupsMap.get(monthKey)!
+      group.items.push(p)
+      group.totalAmount += Number(p.amount) || 0
+    }
+
+    // Convert to array sorted by monthKey ascending (Oldest month -> Newest month)
+    return Array.from(groupsMap.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+  }, [payments])
+
+  const toggleMonthCollapse = (monthKey: string) => {
+    setCollapsedMonths((prev) => {
+      const mostRecentKey = groupedPayments.length > 0 ? groupedPayments[groupedPayments.length - 1].monthKey : ''
+      const isCurrentlyCollapsed = monthKey in prev ? prev[monthKey] : monthKey !== mostRecentKey
+      return {
+        ...prev,
+        [monthKey]: !isCurrentlyCollapsed,
+      }
+    })
+  }
 
   // Handlers
   const handleSaveDoctor = async (
@@ -430,7 +491,7 @@ export default function DoctorLedgerPage() {
                       {doc.phone || '-'}
                     </p>
                     <p className="pt-1 border-t border-slate-200">
-                      <span className="font-semibold text-slate-700">Opening Balance:</span>{' '}
+                      <span className="font-semibold text-slate-700">Initial Opening Balance:</span>{' '}
                       <span className="font-mono font-bold text-slate-900">
                         ₹{formatCurrency(doc.opening_balance)}
                       </span>
@@ -492,7 +553,7 @@ export default function DoctorLedgerPage() {
                   <span className="font-semibold text-slate-800">{activeDoctor.address || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Opening Balance</span>
+                  <span className="text-slate-500 block">Initial Opening Balance</span>
                   <span className="font-mono font-semibold text-slate-800">
                     ₹{formatCurrency(calculations.openingBalance)}
                   </span>
@@ -572,7 +633,7 @@ export default function DoctorLedgerPage() {
                       <th className="border border-slate-300 p-2 text-center">
                         {labDetails.studio_code?.trim() ? labDetails.studio_code.trim().toUpperCase() : 'Case No.'}
                       </th>
-                      <th className="border border-slate-300 p-2 text-left">Doctor Nam</th>
+                      <th className="border border-slate-300 p-2 text-left">Doctor Name</th>
                       <th className="border border-slate-300 p-2 text-left">Patient Name</th>
                       <th className="border border-slate-300 p-2 text-left">Work</th>
                       <th className="border border-slate-300 p-2 text-center">Tooth No.</th>
@@ -673,66 +734,103 @@ export default function DoctorLedgerPage() {
                 </button>
               </div>
 
-              {/* Payment Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-slate-300 text-xs">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
-                      <th className="border border-slate-300 p-2 text-center">Date</th>
-                      <th className="border border-slate-300 p-2 text-right">Amount</th>
-                      <th className="border border-slate-300 p-2 text-center">Payment Mode</th>
-                      <th className="border border-slate-300 p-2 text-left">Remarks</th>
-                      <th className="border border-slate-300 p-2 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="p-6 text-center text-slate-500 italic">
-                          No payment entries recorded yet. Click "Add Payment" above.
-                        </td>
-                      </tr>
-                    ) : (
-                      payments.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50 border-b border-slate-200">
-                          <td className="border border-slate-300 p-2 text-center font-medium">
-                            {formatDate(p.payment_date)}
-                          </td>
-                          <td className="border border-slate-300 p-2 text-right font-mono font-bold text-green-700">
-                            ₹{formatCurrency(p.amount)}
-                          </td>
-                          <td className="border border-slate-300 p-2 text-center font-semibold">
-                            {p.payment_mode}
-                          </td>
-                          <td className="border border-slate-300 p-2 text-slate-600">
-                            {p.remarks || '-'}
-                          </td>
-                          <td className="border border-slate-300 p-2 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => openEditPayment(p)}
-                                className="text-blue-600 hover:text-blue-800 transition-colors"
-                                title="Edit Payment"
-                                type="button"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeletePayment(p)}
-                                className="text-red-400 hover:text-red-700 transition-colors"
-                                title="Delete Payment"
-                                type="button"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {/* Payment History Grouped by Month (Oldest -> Newest) */}
+              {groupedPayments.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 italic border border-slate-300 rounded bg-slate-50">
+                  No payment entries recorded yet. Click "Add Payment" above.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {groupedPayments.map((group) => {
+                    const mostRecentKey = groupedPayments[groupedPayments.length - 1].monthKey
+                    const isCollapsed = group.monthKey in collapsedMonths ? collapsedMonths[group.monthKey] : group.monthKey !== mostRecentKey
+                    return (
+                      <div key={group.monthKey} className="border border-slate-300 rounded overflow-hidden shadow-sm">
+                        {/* Month Header Banner */}
+                        <button
+                          type="button"
+                          onClick={() => toggleMonthCollapse(group.monthKey)}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 hover:bg-slate-200/80 transition-colors text-left select-none border-b border-slate-300"
+                        >
+                          <div className="flex items-center gap-2">
+                            {isCollapsed ? (
+                              <ChevronRight className="w-4 h-4 text-slate-600" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-slate-600" />
+                            )}
+                            <span className="font-bold text-sm text-slate-900 tracking-wide uppercase">
+                              {group.monthLabel}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs font-semibold text-slate-700">
+                            <span className="bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-medium">
+                              {group.items.length} {group.items.length === 1 ? 'Payment' : 'Payments'}
+                            </span>
+                            <span className="font-mono text-slate-900 font-bold text-sm">
+                              ₹{formatCurrency(group.totalAmount)}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Month Payment Rows Table (when expanded) */}
+                        {!isCollapsed && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-300 font-bold text-slate-700">
+                                  <th className="border-r border-b border-slate-300 p-2 text-center w-28">Date</th>
+                                  <th className="border-r border-b border-slate-300 p-2 text-right w-36">Amount</th>
+                                  <th className="border-r border-b border-slate-300 p-2 text-center w-36">Payment Mode</th>
+                                  <th className="border-r border-b border-slate-300 p-2 text-left">Remarks</th>
+                                  <th className="border-b border-slate-300 p-2 text-center w-24">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.items.map((p) => (
+                                  <tr key={p.id} className="hover:bg-slate-50 border-b border-slate-200 last:border-b-0">
+                                    <td className="border-r border-slate-200 p-2 text-center font-medium">
+                                      {formatDate(p.payment_date)}
+                                    </td>
+                                    <td className="border-r border-slate-200 p-2 text-right font-mono font-bold text-green-700">
+                                      ₹{formatCurrency(p.amount)}
+                                    </td>
+                                    <td className="border-r border-slate-200 p-2 text-center font-semibold">
+                                      {p.payment_mode}
+                                    </td>
+                                    <td className="border-r border-slate-200 p-2 text-slate-600">
+                                      {p.remarks || '-'}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <button
+                                          onClick={() => openEditPayment(p)}
+                                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                                          title="Edit Payment"
+                                          type="button"
+                                        >
+                                          <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeletePayment(p)}
+                                          className="text-red-400 hover:text-red-700 transition-colors"
+                                          title="Delete Payment"
+                                          type="button"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
