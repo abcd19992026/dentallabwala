@@ -61,6 +61,32 @@ serve(async (req) => {
       )
     }
 
+    const { data: callerProfile, error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileErr || !callerProfile) {
+      return new Response(
+        JSON.stringify({ error: 'Caller profile not found.' }),
+        {
+          status: 403,
+          headers: corsHeaders,
+        }
+      )
+    }
+
+    if (callerProfile.role !== 'super_admin') {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden. Only super_admin can deactivate clients.' }),
+        {
+          status: 403,
+          headers: corsHeaders,
+        }
+      )
+    }
+
 
     const { labId } = await req.json()
 

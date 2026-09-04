@@ -30,6 +30,7 @@ import {
 } from '@/features/doctor-ledger/services/doctorLedger.service'
 import { ClientModal } from '@/features/super-admin/components/ClientModal'
 import { ResetPasswordModal } from '@/features/super-admin/components/ResetPasswordModal'
+import { DeleteClientModal } from '@/features/super-admin/components/DeleteClientModal'
 import { BackupAllButton } from '@/features/super-admin/components/BackupAllButton'
 import { LastBackupChip } from '@/features/super-admin/components/LastBackupChip'
 import { ExportLabButtons } from '@/features/super-admin/components/ExportLabButtons'
@@ -47,6 +48,9 @@ export default function SuperAdminDashboardPage() {
 
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
   const [resetTargetClient, setResetTargetClient] = useState<DentalLabClient | null>(null)
+
+  const [isDeleteClientOpen, setIsDeleteClientOpen] = useState(false)
+  const [deleteTargetClient, setDeleteTargetClient] = useState<DentalLabClient | null>(null)
 
   const [backupRefreshKey, setBackupRefreshKey] = useState(0)
 
@@ -120,11 +124,12 @@ export default function SuperAdminDashboardPage() {
     await resetClientPassword(clientId, newPass)
   }
 
-  const handleDeleteClient = async (client: DentalLabClient) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete this client? This action cannot be undone.'
-    )
-    if (!confirmed) return
+  const handleOpenDeleteClient = (client: DentalLabClient) => {
+    setDeleteTargetClient(client)
+    setIsDeleteClientOpen(true)
+  }
+
+  const handleConfirmDeleteClient = async (client: DentalLabClient) => {
     await deleteClient(client.id)
     await loadClients()
   }
@@ -415,7 +420,7 @@ export default function SuperAdminDashboardPage() {
 
                             {/* Delete Client */}
                             <button
-                              onClick={() => handleDeleteClient(client)}
+                              onClick={() => handleOpenDeleteClient(client)}
                               className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors"
                               title="Delete Client"
                             >
@@ -450,6 +455,14 @@ export default function SuperAdminDashboardPage() {
         client={resetTargetClient}
         onClose={() => setIsResetPasswordOpen(false)}
         onReset={handleConfirmResetPassword}
+      />
+
+      {/* Delete Client Modal — requires typing the lab name + takes an automatic backup first */}
+      <DeleteClientModal
+        isOpen={isDeleteClientOpen}
+        client={deleteTargetClient}
+        onClose={() => setIsDeleteClientOpen(false)}
+        onConfirmDelete={handleConfirmDeleteClient}
       />
     </div>
   )
