@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { signIn, signOut, fetchUserProfile } from '@/features/auth/services/auth.service'
-import { USER_ROLES, type UserRole } from '@/types/roles'
+import { USER_ROLES } from '@/types/roles'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 
 /**
@@ -63,21 +63,10 @@ export function useAuth() {
             navigate('/app/dashboard', { replace: true })
           }
         } else {
-          // Fallback for unconfigured / demo environment
-          const targetRole = (expectedRole as UserRole) || USER_ROLES.LAB_USER
-          useAuthStore.getState().setUser({
-            id: targetRole === USER_ROLES.SUPER_ADMIN ? 'admin-mock-id' : 'lab-mock-id',
-            email: email || (targetRole === USER_ROLES.SUPER_ADMIN ? 'admin@dentivo.com' : 'lab@example.com'),
-          } as any)
-          useAuthStore.getState().setRole(targetRole)
-          useAuthStore.getState().setLabId(targetRole === USER_ROLES.SUPER_ADMIN ? null : 'lab-demo-123')
-          useAuthStore.getState().setIsInitialized(true)
-
-          if (targetRole === USER_ROLES.SUPER_ADMIN) {
-            navigate('/super-admin/dashboard', { replace: true })
-          } else {
-            navigate('/app/dashboard', { replace: true })
-          }
+          // Supabase is not configured — refuse login instead of granting fake access.
+          throw new Error(
+            'Login is unavailable: the server is not configured correctly. Please contact support.'
+          )
         }
       } catch (err: unknown) {
         const message =

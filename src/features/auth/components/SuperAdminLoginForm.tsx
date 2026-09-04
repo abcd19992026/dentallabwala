@@ -50,9 +50,9 @@ export function SuperAdminLoginForm() {
             <div className="mb-5 flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <Info size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-amber-400 text-sm font-medium">Supabase not configured (Demo Mode)</p>
+                <p className="text-amber-400 text-sm font-medium">Supabase not configured</p>
                 <p className="text-amber-400/70 text-xs mt-0.5">
-                  Click below to access the Super Admin Dashboard.
+                  Login is disabled until the server is configured correctly. Please contact support.
                 </p>
               </div>
             </div>
