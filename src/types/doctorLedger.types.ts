@@ -40,6 +40,18 @@ export interface DoctorPayment {
   created_at?: string
 }
 
+export function isDoctorProfileComplete(doc: Doctor): boolean {
+  return !!(doc.name?.trim() && doc.clinic_name?.trim() && doc.phone?.trim() && doc.address?.trim())
+}
+
+export function getMissingDoctorFields(doc: Doctor): string[] {
+  const missing: string[] = []
+  if (!doc.clinic_name?.trim()) missing.push('Clinic Name')
+  if (!doc.phone?.trim()) missing.push('Phone Number')
+  if (!doc.address?.trim()) missing.push('Address')
+  return missing
+}
+
 export interface DoctorLedgerSummary {
   openingBalance: number
   totalWorkAmount: number

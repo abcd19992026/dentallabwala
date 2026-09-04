@@ -8,6 +8,7 @@ import { AddSupplyModal } from '@/features/doctor-ledger/components/AddSupplyMod
 import { AddPaymentModal } from '@/features/doctor-ledger/components/AddPaymentModal'
 import { DoctorPrintLayout } from '@/features/doctor-ledger/components/DoctorPrintLayout'
 import type { Doctor, DoctorSupply, DoctorPayment } from '@/types/doctorLedger.types'
+import { isDoctorProfileComplete, getMissingDoctorFields } from '@/types/doctorLedger.types'
 
 export default function DoctorLedgerPage() {
   const { labId } = useAuthStore()
@@ -59,11 +60,20 @@ export default function DoctorLedgerPage() {
   // Success toast message
   const [successMessage, setSuccessMessage] = useState('')
 
+  // Warning toast message (shown when an incomplete doctor profile is blocked)
+  const [warningMessage, setWarningMessage] = useState('')
+
   useEffect(() => {
     if (!successMessage) return
     const t = setTimeout(() => setSuccessMessage(''), 2500)
     return () => clearTimeout(t)
   }, [successMessage])
+
+  useEffect(() => {
+    if (!warningMessage) return
+    const t = setTimeout(() => setWarningMessage(''), 4000)
+    return () => clearTimeout(t)
+  }, [warningMessage])
 
   // Fetch Logged-in Client Lab Info from database
   useEffect(() => {
@@ -241,6 +251,18 @@ export default function DoctorLedgerPage() {
   const handleEditDoctor = (doc: Doctor) => {
     setEditingDoctor(doc)
     setIsAddDoctorOpen(true)
+  }
+
+  const handleDoctorCardClick = (doc: Doctor) => {
+    if (!isDoctorProfileComplete(doc)) {
+      const missing = getMissingDoctorFields(doc)
+      setWarningMessage(
+        `Please complete the missing details (${missing.join(', ')}) before opening ${doc.name || 'this doctor'}'s ledger.`
+      )
+      handleEditDoctor(doc)
+      return
+    }
+    setActiveDoctor(doc)
   }
 
   const handleSaveSupply = async (
@@ -461,11 +483,14 @@ export default function DoctorLedgerPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDoctors.map((doc) => (
+              {filteredDoctors.map((doc) => {
+                const isComplete = isDoctorProfileComplete(doc)
+                return (
                 <div
                   key={doc.id}
-                  onClick={() => setActiveDoctor(doc)}
-                  className="bg-white p-5 rounded border border-slate-300 shadow-sm hover:border-blue-600 hover:shadow-md cursor-pointer transition-all space-y-2 relative"
+                  onClick={() => handleDoctorCardClick(doc)}
+                  className={`bg-white p-5 rounded border shadow-sm hover:shadow-md cursor-pointer transition-all space-y-2 relative ${isComplete ? 'border-slate-300 hover:border-blue-600' : 'border-amber-400 hover:border-amber-500'
+                    }`}
                 >
                   <button
                     onClick={(e) => {
@@ -478,9 +503,16 @@ export default function DoctorLedgerPage() {
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <h3 className="font-bold text-base text-slate-900 uppercase">
-                    {doc.name || 'Unnamed Doctor'}
-                  </h3>
+                  <div className="flex items-center gap-2 pr-6">
+                    <h3 className="font-bold text-base text-slate-900 uppercase">
+                      {doc.name || 'Unnamed Doctor'}
+                    </h3>
+                    {!isComplete && (
+                      <span className="shrink-0 text-[10px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded">
+                        Incomplete
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-slate-600 space-y-1">
                     <p>
                       <span className="font-semibold text-slate-700">Clinic:</span>{' '}
@@ -498,7 +530,8 @@ export default function DoctorLedgerPage() {
                     </p>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -902,6 +935,13 @@ export default function DoctorLedgerPage() {
       {successMessage && (
         <div className="fixed top-4 right-4 z-[70] bg-emerald-600 text-white px-4 py-2 rounded shadow-lg text-sm">
           {successMessage}
+        </div>
+      )}
+
+      {/* Warning Toast (incomplete doctor profile blocked) */}
+      {warningMessage && (
+        <div className="fixed top-4 right-4 z-[70] bg-amber-600 text-white px-4 py-2 rounded shadow-lg text-sm max-w-sm">
+          {warningMessage}
         </div>
       )}
 

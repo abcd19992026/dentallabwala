@@ -17,6 +17,7 @@ export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDo
   const [address, setAddress] = useState('')
   const [openingBalance, setOpeningBalance] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<{ name?: string; clinic?: string; phone?: string; address?: string }>({})
 
   // Pre-fill form when editing, or reset when adding
   useEffect(() => {
@@ -34,19 +35,31 @@ export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDo
       setAddress('')
       setOpeningBalance('')
     }
+    setErrors({})
   }, [isOpen, editingDoctor])
 
   if (!isOpen) return null
 
+  const validate = () => {
+    const nextErrors: typeof errors = {}
+    if (!doctorName.trim()) nextErrors.name = 'Doctor Name is required.'
+    if (!clinicName.trim()) nextErrors.clinic = 'Clinic Name is required.'
+    if (!/^\d{10}$/.test(phoneNumber.trim())) nextErrors.phone = 'Enter a valid 10-digit phone number.'
+    if (!address.trim()) nextErrors.address = 'Address is required.'
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validate()) return
     setIsSubmitting(true)
     try {
       await onSave({
-        name: doctorName,
-        clinic_name: clinicName,
-        phone: phoneNumber,
-        address,
+        name: doctorName.trim(),
+        clinic_name: clinicName.trim(),
+        phone: phoneNumber.trim(),
+        address: address.trim(),
         opening_balance: openingBalance ? parseFloat(openingBalance) : 0,
       }, editingDoctor?.id)
       // Reset form
@@ -55,6 +68,7 @@ export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDo
       setPhoneNumber('')
       setAddress('')
       setOpeningBalance('')
+      setErrors({})
       onClose()
     } catch (err) {
       console.error('Error saving doctor:', err)
@@ -84,54 +98,59 @@ export function AddDoctorModal({ isOpen, onClose, onSave, editingDoctor }: AddDo
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Doctor Name
+              Doctor Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={doctorName}
               onChange={(e) => setDoctorName(e.target.value)}
               placeholder="Dr. John Doe"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+              className={`w-full px-3 py-2 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.name ? 'border-red-500' : 'border-slate-300'}`}
             />
+            {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Clinic Name
+              Clinic Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
               placeholder="Dental Care Clinic"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+              className={`w-full px-3 py-2 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.clinic ? 'border-red-500' : 'border-slate-300'}`}
             />
+            {errors.clinic && <p className="text-xs text-red-600 mt-1">{errors.clinic}</p>}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Phone Number
+              Phone Number <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
               placeholder="9876543210"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+              inputMode="numeric"
+              className={`w-full px-3 py-2 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.phone ? 'border-red-500' : 'border-slate-300'}`}
             />
+            {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Address
+              Address <span className="text-red-600">*</span>
             </label>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Clinic street address, City"
               rows={2}
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 resize-none"
+              className={`w-full px-3 py-2 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 resize-none ${errors.address ? 'border-red-500' : 'border-slate-300'}`}
             />
+            {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
           </div>
 
           <div>
