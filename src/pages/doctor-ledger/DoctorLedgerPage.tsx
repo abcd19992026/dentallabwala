@@ -173,16 +173,16 @@ export default function DoctorLedgerPage() {
   // Collapsed state tracking for month-grouped Payment History
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
 
-  // Group payment records by Month-Year (chronologically oldest to newest, with payments inside also oldest to newest)
+  // Group payment records by Month-Year (chronologically newest to oldest, with payments inside also newest to oldest)
   const groupedPayments = useMemo(() => {
     if (!payments.length) return []
 
-    // Sort all payments chronologically (oldest date first)
+    // Sort all payments (latest date first)
     const sorted = [...payments].sort((a, b) => {
       const dateA = a.payment_date || ''
       const dateB = b.payment_date || ''
-      if (dateA !== dateB) return dateA.localeCompare(dateB)
-      return (a.created_at || '').localeCompare(b.created_at || '')
+      if (dateA !== dateB) return dateB.localeCompare(dateA)
+      return (b.created_at || '').localeCompare(a.created_at || '')
     })
 
     // Group by month key "YYYY-MM"
@@ -216,13 +216,13 @@ export default function DoctorLedgerPage() {
       group.totalAmount += Number(p.amount) || 0
     }
 
-    // Convert to array sorted by monthKey ascending (Oldest month -> Newest month)
-    return Array.from(groupsMap.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+    // Convert to array sorted by monthKey descending (Newest month -> Oldest month)
+    return Array.from(groupsMap.values()).sort((a, b) => b.monthKey.localeCompare(a.monthKey))
   }, [payments])
 
   const toggleMonthCollapse = (monthKey: string) => {
     setCollapsedMonths((prev) => {
-      const mostRecentKey = groupedPayments.length > 0 ? groupedPayments[groupedPayments.length - 1].monthKey : ''
+      const mostRecentKey = groupedPayments.length > 0 ? groupedPayments[0].monthKey : ''
       const isCurrentlyCollapsed = monthKey in prev ? prev[monthKey] : monthKey !== mostRecentKey
       return {
         ...prev,
@@ -767,7 +767,7 @@ export default function DoctorLedgerPage() {
                 </button>
               </div>
 
-              {/* Payment History Grouped by Month (Oldest -> Newest) */}
+              {/* Payment History Grouped by Month (Newest -> Oldest) */}
               {groupedPayments.length === 0 ? (
                 <div className="p-6 text-center text-slate-500 italic border border-slate-300 rounded bg-slate-50">
                   No payment entries recorded yet. Click "Add Payment" above.
@@ -775,7 +775,7 @@ export default function DoctorLedgerPage() {
               ) : (
                 <div className="space-y-4">
                   {groupedPayments.map((group) => {
-                    const mostRecentKey = groupedPayments[groupedPayments.length - 1].monthKey
+                    const mostRecentKey = groupedPayments.length > 0 ? groupedPayments[0].monthKey : ''
                     const isCollapsed = group.monthKey in collapsedMonths ? collapsedMonths[group.monthKey] : group.monthKey !== mostRecentKey
                     return (
                       <div key={group.monthKey} className="border border-slate-300 rounded overflow-hidden shadow-sm">
