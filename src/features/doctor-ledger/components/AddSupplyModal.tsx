@@ -25,6 +25,12 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
   const [deliveryDate, setDeliveryDate] = useState('')
   const [remarks, setRemarks] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<{
+    caseNo?: string
+    toothNo?: string
+    doctorName?: string
+    patientName?: string
+  }>({})
 
   // Pre-fill form when editing, or reset when adding
   useEffect(() => {
@@ -52,9 +58,40 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
       setDeliveryDate('')
       setRemarks('')
     }
+    setErrors({})
   }, [isOpen, editingSupply, today])
 
   if (!isOpen) return null
+
+  // Client-side format validation only — no DB constraint. Legacy rows may
+  // already hold non-conforming case_no / tooth_no / names; those stay
+  // viewable, but any edit must bring the offending field into format.
+  // Blank case_no / tooth_no is still allowed (fields remain optional);
+  // the format check only runs when a value is present.
+  const validate = () => {
+    const nextErrors: typeof errors = {}
+
+    const trimmedCaseNo = caseNo.trim()
+    if (trimmedCaseNo && !/^[0-9]+$/.test(trimmedCaseNo)) {
+      nextErrors.caseNo = 'Must contain digits only — no letters or other characters.'
+    }
+
+    const trimmedToothNo = toothNo.trim()
+    if (trimmedToothNo && !/^[0-9]{1,2}([.,][0-9]{1,2})*$/.test(trimmedToothNo)) {
+      nextErrors.toothNo = 'Use 2-digit tooth numbers separated by "." or "," (e.g. 11, 12, 46).'
+    }
+
+    if (/[0-9]/.test(doctorName)) {
+      nextErrors.doctorName = 'Doctor Name cannot contain digits.'
+    }
+
+    if (/[0-9]/.test(patientName)) {
+      nextErrors.patientName = 'Patient Name cannot contain digits.'
+    }
+
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
 
   // Auto-calculated Billing Amount = Per Unit Charge × Unit
   const computedBillingAmount =
@@ -62,6 +99,7 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validate()) return
     setIsSubmitting(true)
     try {
       await onSave({
@@ -88,6 +126,7 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
       setUnitCount('1')
       setDeliveryDate('')
       setRemarks('')
+      setErrors({})
       onClose()
     } catch (err) {
       console.error('Failed to save supply entry:', err)
@@ -136,8 +175,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
                 value={caseNo}
                 onChange={(e) => setCaseNo(e.target.value)}
                 placeholder={studioCode?.trim() ? `${studioCode.trim().toUpperCase()} No.` : 'Case Number'}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+                className={`w-full px-3 py-1.5 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.caseNo ? 'border-red-500' : 'border-slate-300'}`}
               />
+              {errors.caseNo && <p className="text-xs text-red-600 mt-1">{errors.caseNo}</p>}
             </div>
           </div>
 
@@ -151,8 +191,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
                 value={doctorName}
                 onChange={(e) => setDoctorName(e.target.value)}
                 placeholder="Doctor Name (optional)"
-                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+                className={`w-full px-3 py-1.5 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.doctorName ? 'border-red-500' : 'border-slate-300'}`}
               />
+              {errors.doctorName && <p className="text-xs text-red-600 mt-1">{errors.doctorName}</p>}
             </div>
           </div>
 
@@ -166,8 +207,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
                 placeholder="Patient Name"
-                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+                className={`w-full px-3 py-1.5 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.patientName ? 'border-red-500' : 'border-slate-300'}`}
               />
+              {errors.patientName && <p className="text-xs text-red-600 mt-1">{errors.patientName}</p>}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
@@ -193,8 +235,9 @@ export function AddSupplyModal({ isOpen, onClose, onSave, studioCode, editingSup
                 value={toothNo}
                 onChange={(e) => setToothNo(e.target.value)}
                 placeholder="11, 12, 46"
-                className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600"
+                className={`w-full px-3 py-1.5 border rounded text-sm text-slate-900 focus:outline-none focus:border-blue-600 ${errors.toothNo ? 'border-red-500' : 'border-slate-300'}`}
               />
+              {errors.toothNo && <p className="text-xs text-red-600 mt-1">{errors.toothNo}</p>}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
