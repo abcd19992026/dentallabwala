@@ -116,6 +116,32 @@ serve(async (req) => {
     }
 
 
+    // Revoke the lab user's active sessions so an already-open tab stops
+    // working immediately instead of lasting until the access token expires.
+    // The lab is already deactivated at this point — if revocation fails we
+    // log it but still report the deactivation itself as successful.
+    try {
+      const { data: labProfile, error: labProfileErr } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('lab_id', labId)
+        .single()
+
+      if (labProfileErr || !labProfile) {
+        console.error('Session revoke skipped — profile lookup failed:', labProfileErr)
+      } else {
+        const { error: signOutErr } =
+          await supabaseAdmin.auth.admin.signOut(labProfile.id, 'global')
+
+        if (signOutErr) {
+          console.error('Failed to revoke lab user sessions:', signOutErr)
+        }
+      }
+    } catch (revokeErr) {
+      console.error('Failed to revoke lab user sessions:', revokeErr)
+    }
+
+
     return new Response(
       JSON.stringify({
         success: true,
