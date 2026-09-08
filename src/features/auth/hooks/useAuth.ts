@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { signIn, signOut } from '@/features/auth/services/auth.service'
-import { fetchUserProfileOnce } from '@/features/auth/services/authProfileGate'
+import { signIn, signOut, fetchUserProfile } from '@/features/auth/services/auth.service'
 import { USER_ROLES } from '@/types/roles'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 
@@ -10,8 +9,17 @@ import { isSupabaseConfigured } from '@/lib/supabase/client'
  * useAuth — the primary hook for authentication actions in components.
  */
 export function useAuth() {
-  const { user, role, labId, isLoading, isInitialized, clearAuth, sessionError, setSessionError } =
-    useAuthStore()
+  const {
+    user,
+    role,
+    labId,
+    isLoading,
+    isInitialized,
+    clearAuth,
+    sessionError,
+    setSessionError,
+    setSignInInProgress,
+  } = useAuthStore()
   const navigate = useNavigate()
   const [localError, setLocalError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,6 +41,10 @@ export function useAuth() {
     async (email: string, password: string, expectedRole?: string) => {
       setLocalError(null)
       setSessionError(null)
+      // Claim this sign-in: signIn() below fires SIGNED_IN synchronously
+      // within supabase-js, and useAuthInitializer's handler checks this
+      // flag to avoid issuing a second /profiles request.
+      setSignInInProgress(true)
       setIsSubmitting(true)
 
       try {
@@ -45,9 +57,8 @@ export function useAuth() {
             throw new Error('Authentication succeeded but user session could not be established.')
           }
 
-          // 2. Read profiles table (single-flight: the auth initializer
-          //    fetches the same profile concurrently on this sign-in)
-          const profile = await fetchUserProfileOnce(authUser.id)
+          // 2. Read profiles table — the only profile fetch for this sign-in
+          const profile = await fetchUserProfile(authUser.id)
 
           // 3. Verify user role if expected (super_admin vs lab_user)
           if (expectedRole && profile.role !== expectedRole) {
@@ -83,11 +94,18 @@ export function useAuth() {
         // This is the message the user acted on — keep it as the local
         // error so the initializer's cleanup path can't replace it.
         setLocalError(message)
+        // signIn() may have minted a session before the profile/role check
+        // failed (e.g. a deactivated lab). The initializer no longer signs
+        // out for a login-driven sign-in, so revoke it here.
+        if (isSupabaseConfigured) {
+          await signOut().catch(() => undefined)
+        }
       } finally {
+        setSignInInProgress(false)
         setIsSubmitting(false)
       }
     },
-    [navigate, setSessionError]
+    [navigate, setSessionError, setSignInInProgress]
   )
 
   const logout = useCallback(async () => {

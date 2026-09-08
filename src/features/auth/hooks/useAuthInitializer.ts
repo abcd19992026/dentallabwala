@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
-import { fetchUserProfileOnce } from '@/features/auth/services/authProfileGate'
+import { fetchUserProfile } from '@/features/auth/services/auth.service'
 
 /**
  * useAuthInitializer — rendered once at the app root.
@@ -30,7 +30,7 @@ export function useAuthInitializer() {
 
         if (session?.user) {
           try {
-            const profile = await fetchUserProfileOnce(session.user.id)
+            const profile = await fetchUserProfile(session.user.id)
             setUser(session.user)
             setRole(profile.role)
             setLabId(profile.labId)
@@ -70,8 +70,25 @@ export function useAuthInitializer() {
         }
 
         if (session.user) {
+          // Read live store state (not stale closure values).
+          const store = useAuthStore.getState()
+
+          // useAuth.login() owns its own sign-in: it fetches the profile
+          // and populates the store, and signs out on failure. A second
+          // fetch here would race it — and once login()'s deactivation
+          // check has triggered signOut(), that refetch lands
+          // unauthenticated (PGRST116 -> "Profile not found.") and
+          // clobbers the real "Your account is inactive." message.
+          if (store.signInInProgress) return
+
+          // Store already hydrated for this same user (token refresh,
+          // duplicate SIGNED_IN / INITIAL_SESSION replay): nothing to do.
+          if (store.user?.id === session.user.id && store.role) return
+
+          // A session we don't know about (e.g. a different user id, or a
+          // session restored outside the login flow): fetch and hydrate.
           try {
-            const profile = await fetchUserProfileOnce(session.user.id)
+            const profile = await fetchUserProfile(session.user.id)
             setUser(session.user)
             setRole(profile.role)
             setLabId(profile.labId)
