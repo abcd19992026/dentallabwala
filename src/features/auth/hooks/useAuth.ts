@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { signIn, signOut, fetchUserProfile } from '@/features/auth/services/auth.service'
+import { signIn, signOut } from '@/features/auth/services/auth.service'
+import { fetchUserProfileOnce } from '@/features/auth/services/authProfileGate'
 import { USER_ROLES } from '@/types/roles'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 
@@ -9,10 +10,16 @@ import { isSupabaseConfigured } from '@/lib/supabase/client'
  * useAuth — the primary hook for authentication actions in components.
  */
 export function useAuth() {
-  const { user, role, labId, isLoading, isInitialized, clearAuth } = useAuthStore()
+  const { user, role, labId, isLoading, isInitialized, clearAuth, sessionError, setSessionError } =
+    useAuthStore()
   const navigate = useNavigate()
-  const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // The message the login form shows: an error from this hook's own
+  // login() call takes precedence; otherwise fall back to a reason the
+  // auth initializer captured while rejecting a restored/changed session.
+  const error = localError ?? sessionError
 
   const isSuperAdmin = role === USER_ROLES.SUPER_ADMIN
   const isLabUser = role === USER_ROLES.LAB_USER
@@ -24,7 +31,8 @@ export function useAuth() {
    */
   const login = useCallback(
     async (email: string, password: string, expectedRole?: string) => {
-      setError(null)
+      setLocalError(null)
+      setSessionError(null)
       setIsSubmitting(true)
 
       try {
@@ -37,8 +45,9 @@ export function useAuth() {
             throw new Error('Authentication succeeded but user session could not be established.')
           }
 
-          // 2. Read profiles table
-          const profile = await fetchUserProfile(authUser.id)
+          // 2. Read profiles table (single-flight: the auth initializer
+          //    fetches the same profile concurrently on this sign-in)
+          const profile = await fetchUserProfileOnce(authUser.id)
 
           // 3. Verify user role if expected (super_admin vs lab_user)
           if (expectedRole && profile.role !== expectedRole) {
@@ -71,12 +80,14 @@ export function useAuth() {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'An unexpected authentication error occurred.'
-        setError(message)
+        // This is the message the user acted on — keep it as the local
+        // error so the initializer's cleanup path can't replace it.
+        setLocalError(message)
       } finally {
         setIsSubmitting(false)
       }
     },
-    [navigate]
+    [navigate, setSessionError]
   )
 
   const logout = useCallback(async () => {
@@ -106,6 +117,9 @@ export function useAuth() {
     isSubmitting,
     login,
     logout,
-    clearError: () => setError(null),
+    clearError: () => {
+      setLocalError(null)
+      setSessionError(null)
+    },
   }
 }

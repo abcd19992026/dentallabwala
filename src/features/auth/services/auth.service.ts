@@ -37,18 +37,14 @@ export async function signOut() {
  * Shows detailed error message if database table is missing (404 / 42P01).
  */
 export async function fetchUserProfile(userId: string): Promise<UserProfile> {
+  // Query `profiles` alone — no embedded labs(...). This always succeeds
+  // for the logged-in user under the "User reads own profile" policy.
+  // (An embedded labs(...) relation would drag the whole result to zero
+  // rows when get_my_lab_id() returns NULL for a deactivated lab, making
+  // .single() throw PGRST116 before the inactive check below can run.)
   const { data, error, status } = await supabase
     .from('profiles')
-    .select(`
-      id,
-      lab_id,
-      role,
-      full_name,
-      created_at,
-      labs(
-        is_active
-      )
-      `)
+    .select('id, lab_id, role, full_name, created_at')
     .eq('id', userId)
     .single()
 
@@ -65,21 +61,35 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
         "Database Error: Table 'profiles' is missing in Supabase. Please run the SQL migration (supabase/migrations/20260723000000_initial_schema.sql) in your Supabase SQL Editor."
       )
     }
+    // PGRST116 = zero rows: the profile row simply doesn't exist. Show a
+    // friendly message instead of the raw PostgREST coercion error.
+    if (error.code === 'PGRST116') {
+      throw new Error('Profile not found. Please contact administrator.')
+    }
     throw new Error(`Database Error (${error.code || status}): ${error.message}`)
   }
 
-  const labRow: any = Array.isArray(data.labs)
-    ? data.labs[0]
-    : data.labs
-
-  if (
-    data.role === 'lab_user' &&
-    labRow &&
-    labRow.is_active === false
-  ) {
-    throw new Error(
-      `Your account is inactive. Please contact administrator.`
-    )
+  // Deactivation enforcement. get_my_lab_id() returns NULL for a
+  // deactivated lab, so its `labs` row is hidden by RLS. Query labs
+  // separately with maybeSingle() (zero rows -> null, no throw), then
+  // fail closed: an active lab_user can always read their own labs row,
+  // so a missing lab_id or a missing/inactive row means deactivated.
+  // super_admin has no lab_id and skips this entirely.
+  if (data.role === 'lab_user') {
+    let labIsActive = false
+    if (data.lab_id) {
+      const { data: labRow } = await supabase
+        .from('labs')
+        .select('is_active')
+        .eq('id', data.lab_id)
+        .maybeSingle()
+      labIsActive = labRow?.is_active === true
+    }
+    if (!labIsActive) {
+      throw new Error(
+        `Your account is inactive. Please contact administrator.`
+      )
+    }
   }
 
   return {
