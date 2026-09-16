@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, ArrowLeft, Printer, Trash2, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
@@ -9,11 +10,14 @@ import { AddPaymentModal } from '@/features/doctor-ledger/components/AddPaymentM
 import { DoctorPrintLayout } from '@/features/doctor-ledger/components/DoctorPrintLayout'
 import type { Doctor, DoctorSupply, DoctorPayment } from '@/types/doctorLedger.types'
 import { isDoctorProfileComplete, getMissingDoctorFields } from '@/types/doctorLedger.types'
+import { isDoctorLedgerLockedForLab, DoctorLedgerLockedModal } from '@/lib/tempDoctorLedgerLock'
 
 export default function DoctorLedgerPage() {
   const { labId } = useAuthStore()
   const { tenant } = useTenantStore()
+  const navigate = useNavigate()
   const effectiveLabId = labId || tenant?.id || ''
+  const isLocked = isDoctorLedgerLockedForLab(effectiveLabId)
 
   // Logged-in Client Lab Details
   const [labDetails, setLabDetails] = useState<{ lab_name: string; address: string; studio_code: string; mobile: string; whatsapp_number: string; logoUrl: string }>({
@@ -78,7 +82,7 @@ export default function DoctorLedgerPage() {
   // Fetch Logged-in Client Lab Info from database
   useEffect(() => {
     async function loadLabInfo() {
-      if (!effectiveLabId) return
+      if (!effectiveLabId || isLocked) return
       const info = await doctorLedgerService.getLabInfo(effectiveLabId)
       if (info && info.lab_name) {
         setLabDetails({
@@ -101,10 +105,11 @@ export default function DoctorLedgerPage() {
       }
     }
     loadLabInfo()
-  }, [effectiveLabId, tenant])
+  }, [effectiveLabId, tenant, isLocked])
 
   // Load doctors on mount
   useEffect(() => {
+    if (isLocked) return
     async function loadDoctorsData() {
       setIsLoading(true)
       try {
@@ -117,11 +122,11 @@ export default function DoctorLedgerPage() {
       }
     }
     loadDoctorsData()
-  }, [effectiveLabId])
+  }, [effectiveLabId, isLocked])
 
   // Load supplies and payments when activeDoctor changes
   useEffect(() => {
-    if (!activeDoctor) {
+    if (!activeDoctor || isLocked) {
       setSupplies([])
       setPayments([])
       return
@@ -142,7 +147,7 @@ export default function DoctorLedgerPage() {
       }
     }
     loadDoctorDetails()
-  }, [activeDoctor, effectiveLabId])
+  }, [activeDoctor, effectiveLabId, isLocked])
 
   // Filtered doctors list for instant search
   const filteredDoctors = useMemo(() => {
@@ -438,6 +443,15 @@ export default function DoctorLedgerPage() {
       return `${d}.${m}.${y.slice(-2)}`
     }
     return dateStr
+  }
+
+  if (isLocked) {
+    return (
+      <DoctorLedgerLockedModal
+        isOpen
+        onClose={() => navigate('/app/dashboard')}
+      />
+    )
   }
 
   return (
