@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FileText, BookOpen, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useTenantStore } from '@/stores/tenantStore'
+import { useAuthStore } from '@/stores/authStore'
+import { isDoctorLedgerLockedForLab, DoctorLedgerLockedModal } from '@/lib/tempDoctorLedgerLock'
 
 /**
  * Navigation item configuration.
@@ -30,6 +33,8 @@ const NAV_ITEMS = [
  */
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { tenant } = useTenantStore()
+  const { labId } = useAuthStore()
+  const [showLockedModal, setShowLockedModal] = useState(false)
 
   return (
     <aside className="w-64 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col h-full">
@@ -55,24 +60,36 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <p className="text-slate-600 text-xs font-medium uppercase tracking-wider px-3 mb-2">
           Main Menu
         </p>
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                isActive
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              )
-            }
-          >
-            <item.icon size={18} className="flex-shrink-0" />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const isDoctorLedger = item.path === '/app/doctor-ledger'
+          const isLocked = isDoctorLedger && isDoctorLedgerLockedForLab(labId)
+
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={(e) => {
+                if (isLocked) {
+                  e.preventDefault()
+                  setShowLockedModal(true)
+                  return
+                }
+                onNavigate?.()
+              }}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                )
+              }
+            >
+              <item.icon size={18} className="flex-shrink-0" />
+              <span>{item.label}</span>
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* Footer */}
@@ -81,6 +98,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           DENTIVO · v19.0
         </p>
       </div>
+
+      <DoctorLedgerLockedModal isOpen={showLockedModal} onClose={() => setShowLockedModal(false)} />
     </aside>
   )
 }

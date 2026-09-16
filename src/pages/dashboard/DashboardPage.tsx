@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FileText, BookOpen, TrendingUp, Activity } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
+import { isDoctorLedgerLockedForLab, DoctorLedgerLockedModal } from '@/lib/tempDoctorLedgerLock'
 
 /**
  * DashboardPage — route: /app/dashboard
@@ -9,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore'
  */
 export default function DashboardPage() {
   const { labId } = useAuthStore()
+  const [showLockedModal, setShowLockedModal] = useState(false)
 
   const [doctorsThisMonth, setDoctorsThisMonth] = useState<number | null>(null)
   const [doctorTotal, setDoctorTotal] = useState<number | null>(null)
@@ -142,6 +144,12 @@ export default function DashboardPage() {
             <a
               key={module.title}
               href={module.href}
+              onClick={(e) => {
+                if (module.href === '/app/doctor-ledger' && isDoctorLedgerLockedForLab(labId)) {
+                  e.preventDefault()
+                  setShowLockedModal(true)
+                }
+              }}
               className={`group rounded-2xl border p-6 ${bgMap[module.color]} hover:scale-[1.01] transition-all duration-200 block`}
             >
               <div
@@ -157,6 +165,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      <DoctorLedgerLockedModal isOpen={showLockedModal} onClose={() => setShowLockedModal(false)} />
     </div>
   )
 }
