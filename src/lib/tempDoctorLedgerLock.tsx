@@ -4,7 +4,7 @@
 // Frontend-only gate: blocks navigation into Doctor Ledger for specific
 // lab_id(s). No database column, RLS policy, or backend check is involved.
 // Does not affect Warranty Card or any other feature/lab.
-export const TEMP_LOCKED_LAB_IDS = ['48e9b9f8-2362-4fcc-ab42-ff03327bab45']
+export const TEMP_LOCKED_LAB_IDS = ['']
 
 export function isDoctorLedgerLockedForLab(labId: string | null): boolean {
   return !!labId && TEMP_LOCKED_LAB_IDS.includes(labId)
