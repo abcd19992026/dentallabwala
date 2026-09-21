@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FileText, BookOpen, TrendingUp, Activity } from 'lucide-react'
+import { FileText, BookOpen, TrendingUp, Activity, Receipt } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import { isDoctorLedgerLockedForLab, DoctorLedgerLockedModal } from '@/lib/tempDoctorLedgerLock'
@@ -72,6 +72,7 @@ export default function DashboardPage() {
     cyan: 'from-cyan-500 to-cyan-600',
     violet: 'from-violet-500 to-violet-600',
     emerald: 'from-emerald-500 to-emerald-600',
+    amber: 'from-amber-500 to-amber-600',
   }
 
   const bgMap: Record<string, string> = {
@@ -79,6 +80,7 @@ export default function DashboardPage() {
     cyan: 'bg-cyan-500/10 border-cyan-500/20',
     violet: 'bg-violet-500/10 border-violet-500/20',
     emerald: 'bg-emerald-500/10 border-emerald-500/20',
+    amber: 'bg-amber-500/10 border-amber-500/20',
   }
 
   const textMap: Record<string, string> = {
@@ -86,6 +88,7 @@ export default function DashboardPage() {
     cyan: 'text-cyan-400',
     violet: 'text-violet-400',
     emerald: 'text-emerald-400',
+    amber: 'text-amber-400',
   }
 
   return (
@@ -124,7 +127,7 @@ export default function DashboardPage() {
       {/* Quick access modules */}
       <div>
         <h2 className="text-lg font-semibold text-white mb-4">Modules</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             {
               title: 'Warranty Card',
@@ -139,6 +142,13 @@ export default function DashboardPage() {
               icon: BookOpen,
               href: '/app/doctor-ledger',
               color: 'cyan',
+            },
+            {
+              title: 'Expenses',
+              description: 'Track lab expenditures, vendor bills, and operational costs.',
+              icon: Receipt,
+              href: '/app/expenses',
+              color: 'amber',
             },
           ].map((module) => (
             <a

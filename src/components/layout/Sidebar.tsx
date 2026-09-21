@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { FileText, BookOpen, LayoutDashboard } from 'lucide-react'
+import { FileText, BookOpen, LayoutDashboard, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useTenantStore } from '@/stores/tenantStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,6 +25,11 @@ const NAV_ITEMS = [
     label: 'Doctor Ledger',
     path: '/app/doctor-ledger',
     icon: BookOpen,
+  },
+  {
+    label: 'Expenses',
+    path: '/app/expenses',
+    icon: Receipt,
   },
 ]
 

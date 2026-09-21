@@ -11,6 +11,7 @@ const SuperAdminLoginPage = lazy(() => import('@/pages/auth/SuperAdminLoginPage'
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'))
 const WarrantyCardPage = lazy(() => import('@/pages/warranty-card/WarrantyCardPage'))
 const DoctorLedgerPage = lazy(() => import('@/pages/doctor-ledger/DoctorLedgerPage'))
+const ExpensesPage = lazy(() => import('@/pages/expenses/ExpensesPage'))
 const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
@@ -89,6 +90,16 @@ export const router = createBrowserRouter([
               <AppShell>
                 <Suspense fallback={<PageLoader />}>
                   <DoctorLedgerPage />
+                </Suspense>
+              </AppShell>
+            ),
+          },
+          {
+            path: 'expenses',
+            element: (
+              <AppShell>
+                <Suspense fallback={<PageLoader />}>
+                  <ExpensesPage />
                 </Suspense>
               </AppShell>
             ),
