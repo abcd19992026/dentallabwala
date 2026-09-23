@@ -5,17 +5,472 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="DENTIVO — Professional SaaS platform for Dental Laboratories" />
-  <title>DENTIVO</title>
+
+  <title>Dentivo — Doctor Ledger, Billing &amp; Warranty Cards for Dental Labs</title>
+  <meta name="description"
+    content="Dentivo is a SaaS platform for dental laboratories to manage doctor ledgers, track supplies and payments, and generate printable warranty cards for prosthetic and tooth work." />
+
+  <link rel="canonical" href="https://dentallabwala.vercel.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Dentivo" />
+  <meta property="og:title" content="Dentivo — Doctor Ledger, Billing & Warranty Cards for Dental Labs" />
+  <meta property="og:description"
+    content="Manage doctor ledgers, track supplies and payments, and generate printable warranty cards for prosthetic and tooth work — built for dental labs." />
+  <meta property="og:url" content="https://dentallabwala.vercel.app/" />
+  <meta property="og:image" content="https://dentallabwala.vercel.app/icon-512.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Dentivo — Doctor Ledger, Billing & Warranty Cards for Dental Labs" />
+  <meta name="twitter:description"
+    content="Manage doctor ledgers, track supplies and payments, and generate printable warranty cards for prosthetic and tooth work — built for dental labs." />
+  <meta name="twitter:image" content="https://dentallabwala.vercel.app/icon-512.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap"
     rel="stylesheet" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Dentivo",
+    "description": "Dentivo is a SaaS platform for dental laboratories to manage doctor ledgers, track supplies and payments, and generate printable warranty cards for prosthetic and tooth work.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://dentallabwala.vercel.app/",
+    "offers": {
+      "@type": "Offer",
+      "description": "Contact Dentivo for current pricing.",
+      "availability": "https://schema.org/InStock",
+      "url": "https://dentallabwala.vercel.app/login"
+    }
+  }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: #030712;
+      color: #f1f5f9;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.6;
+      position: relative;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, .logo, .btn { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* Ambient glow blobs */
+    .glow { position: absolute; border-radius: 999px; filter: blur(90px); pointer-events: none; z-index: 0; }
+    .glow-1 { top: -120px; left: 50%; transform: translateX(-50%); width: 800px; height: 460px;
+      background: radial-gradient(closest-side, rgba(37,99,235,0.28), rgba(34,211,238,0.14), transparent); }
+    .glow-2 { top: 900px; right: -180px; width: 560px; height: 560px;
+      background: radial-gradient(closest-side, rgba(124,58,237,0.20), transparent); }
+    .glow-3 { top: 1900px; left: -180px; width: 560px; height: 560px;
+      background: radial-gradient(closest-side, rgba(34,211,238,0.16), transparent); }
+
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(3, 7, 18, 0.75);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-badge {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #22d3ee);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 20px -8px rgba(37,99,235,0.6);
+      color: #fff; font-weight: 800; font-size: 15px;
+    }
+    .logo { font-size: 19px; font-weight: 800; letter-spacing: 0.01em; color: #fff; }
+    .tag-pill {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #22d3ee; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25);
+      padding: 2px 8px; border-radius: 999px; margin-left: 4px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 500; color: #cbd5e1; }
+    .nav-links a { transition: color 0.15s ease; }
+    .nav-links a:hover { color: #fff; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 14.5px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #22d3ee); color: #fff;
+      box-shadow: 0 10px 24px -10px rgba(37,99,235,0.55);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -8px rgba(34,211,238,0.5); }
+    .btn-outline {
+      border: 1px solid rgba(255,255,255,0.14); color: #e2e8f0; background: rgba(255,255,255,0.03);
+    }
+    .btn-outline:hover { border-color: rgba(34,211,238,0.5); background: rgba(34,211,238,0.06); }
+    .btn-sm { padding: 9px 18px; font-size: 13.5px; }
+
+    /* Hero */
+    .hero { padding: 88px 0 64px; text-align: center; position: relative; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #67e8f9; background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.22);
+      padding: 7px 16px; border-radius: 999px; margin-bottom: 28px;
+    }
+    .eyebrow .dot { width: 7px; height: 7px; border-radius: 999px; background: #22d3ee; }
+    .trial-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+      color: #6ee7b7; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.28);
+      padding: 7px 16px; border-radius: 999px;
+    }
+    .hero-trial { margin-top: 22px; }
+    h1 {
+      font-size: 48px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em;
+      margin: 0 0 22px; color: #fff;
+    }
+    .grad-text {
+      background: linear-gradient(90deg, #60a5fa, #67e8f9, #a78bfa);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p.lead { font-size: 18px; color: #94a3b8; max-width: 620px; margin: 0 auto 36px; }
+    .hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    section { padding: 72px 0; border-top: 1px solid rgba(255,255,255,0.06); position: relative; }
+    .section-head { text-align: center; max-width: 620px; margin: 0 auto 48px; }
+    .eyebrow-sm {
+      display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #22d3ee; margin-bottom: 10px;
+    }
+    h2 { font-size: 30px; font-weight: 800; color: #fff; margin: 0 0 12px; letter-spacing: -0.01em; }
+    .section-sub { color: #94a3b8; font-size: 15.5px; margin: 0; }
+
+    /* Compare */
+    .compare-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .compare-card { padding: 32px; border-radius: 18px; }
+    .compare-old { background: rgba(127,29,29,0.08); border: 1px solid rgba(248,113,113,0.18); }
+    .compare-new { background: rgba(6,78,59,0.12); border: 1px solid rgba(52,211,153,0.25); }
+    .compare-badge {
+      display: inline-block; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px;
+      margin-bottom: 20px;
+    }
+    .compare-old .compare-badge { background: rgba(248,113,113,0.14); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
+    .compare-new .compare-badge { background: rgba(52,211,153,0.14); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.3); }
+    .compare-item { display: flex; gap: 12px; margin-top: 18px; font-size: 14.5px; }
+    .compare-item .mark {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 999px; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; margin-top: 2px;
+    }
+    .compare-old .mark { background: rgba(248,113,113,0.18); color: #fca5a5; }
+    .compare-new .mark { background: rgba(52,211,153,0.18); color: #6ee7b7; }
+    .compare-item strong { display: block; color: #fff; font-weight: 700; }
+    .compare-item span.desc { color: #94a3b8; font-size: 13px; }
+
+    /* Features */
+    .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+    .feat-card {
+      padding: 30px; border-radius: 18px; background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+    .feat-card:hover { transform: translateY(-4px); border-color: rgba(34,211,238,0.3); background: rgba(255,255,255,0.045); }
+    .feat-icon {
+      width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 20px; border: 1px solid;
+    }
+    .feat-icon.blue { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.28); }
+    .feat-icon.cyan { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.28); }
+    .feat-icon.violet { background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.28); }
+    .feat-icon.amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.28); }
+    .feat-card h3 { font-size: 17.5px; font-weight: 700; color: #fff; margin: 0 0 10px; }
+    .feat-card p { font-size: 14.5px; color: #94a3b8; margin: 0; }
+    .trust-line {
+      text-align: center; margin: 32px auto 0; max-width: 520px;
+      font-size: 13.5px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    /* Who it's for */
+    .who-list { list-style: none; padding: 0; margin: 0 auto; max-width: 640px; display: grid; gap: 12px; }
+    .who-list li {
+      display: flex; gap: 12px; align-items: flex-start; font-size: 15px; color: #cbd5e1;
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 16px 20px;
+    }
+    .who-list .mark {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 999px; background: rgba(34,211,238,0.15);
+      color: #22d3ee; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+
+    /* FAQ (native <details>, zero JS) */
+    .faq-list { display: grid; gap: 12px; max-width: 760px; margin: 0 auto; }
+    .faq-item {
+      border-radius: 14px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.025);
+      overflow: hidden;
+    }
+    .faq-item[open] { border-color: rgba(37,99,235,0.35); background: rgba(255,255,255,0.04); }
+    .faq-item summary {
+      cursor: pointer; list-style: none; padding: 20px 24px; font-weight: 700; color: #fff; font-size: 15.5px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+'; font-size: 20px; font-weight: 400; color: #22d3ee; flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .faq-item[open] summary::after { transform: rotate(45deg); }
+    .faq-body { padding: 0 24px 22px; color: #94a3b8; font-size: 14.5px; }
+
+    /* CTA */
+    .cta-section {
+      text-align: center;
+      background: radial-gradient(600px 260px at 50% 0%, rgba(37,99,235,0.12), transparent);
+    }
+    .cta-section h2 { margin-bottom: 14px; }
+    .cta-section p { color: #94a3b8; margin: 0 0 32px; font-size: 15.5px; }
+
+    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 56px 0 32px; color: #94a3b8; font-size: 13.5px; }
+    .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .footer-brand p { color: #94a3b8; font-size: 13px; margin: 12px 0 0; max-width: 280px; }
+    footer h4 { color: #fff; font-size: 14px; font-weight: 700; margin: 0 0 14px; }
+    footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    footer ul a { transition: color 0.15s ease; }
+    footer ul a:hover { color: #22d3ee; }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: #64748b; font-size: 12.5px;
+    }
+
+    @media (max-width: 860px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 34px; }
+      .hero { padding: 56px 0 44px; }
+    }
+  </style>
 </head>
 
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="glow glow-3"></div>
+
+  <header>
+    <div class="wrap">
+      <nav>
+        <div class="brand">
+          <div class="brand-badge">D</div>
+          <span class="logo">DENTIVO</span>
+        </div>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#compare">Why Dentivo</a>
+          <a href="#faq">FAQ</a>
+        </div>
+        <a class="btn btn-primary btn-sm" href="/login">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" style="border-top: none;">
+      <div class="wrap">
+        <span class="eyebrow"><span class="dot"></span>Built for Dental Laboratories</span>
+        <h1>Doctor ledgers, supplies &amp; <span class="grad-text">warranty cards</span> — in one place</h1>
+        <p class="lead">
+          Dentivo is a SaaS platform that helps dental labs manage doctor accounts,
+          track supplies and payments, and generate printable warranty cards for
+          prosthetic and tooth work — so nothing gets lost in spreadsheets or paper trails.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="/login">Login to Dentivo</a>
+          <a class="btn btn-outline" href="#features">See features</a>
+        </div>
+        <div class="hero-trial">
+          <span class="trial-pill">✨ Try Dentivo free for 7 days</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow-sm">Why Labs Switch</span>
+          <h2>The Old Way vs. The Dentivo Way</h2>
+          <p class="section-sub">Replace scattered registers and manual paperwork with one system built for how dental labs actually work.</p>
+        </div>
+        <div class="compare-grid">
+          <div class="compare-card compare-old">
+            <span class="compare-badge">The Manual Way</span>
+            <div class="compare-item">
+              <span class="mark">✕</span>
+              <div><strong>Paper Registers &amp; Scattered Notebooks</strong><span class="desc">Hard to find a doctor's transaction history during reconciliation.</span></div>
+            </div>
+            <div class="compare-item">
+              <span class="mark">✕</span>
+              <div><strong>Disputed Month-End Balances</strong><span class="desc">No single source of truth for what was billed, paid, or delivered.</span></div>
+            </div>
+            <div class="compare-item">
+              <span class="mark">✕</span>
+              <div><strong>Handwritten Warranty Slips</strong><span class="desc">Inconsistent formatting that's easy to lose and hard to reissue.</span></div>
+            </div>
+          </div>
+          <div class="compare-card compare-new">
+            <span class="compare-badge">The Dentivo Way</span>
+            <div class="compare-item">
+              <span class="mark">✓</span>
+              <div><strong>One Running Ledger per Doctor</strong><span class="desc">Balances, payments, and case history in a single, searchable place.</span></div>
+            </div>
+            <div class="compare-item">
+              <span class="mark">✓</span>
+              <div><strong>Clear Payment &amp; Case Records</strong><span class="desc">A consistent record of every case and payment reduces disputes.</span></div>
+            </div>
+            <div class="compare-item">
+              <span class="mark">✓</span>
+              <div><strong>Consistent, Printable Warranty Cards</strong><span class="desc">Generate cards from templates and print or export them as PDF.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow-sm">Key Features</span>
+          <h2>Everything a lab needs to run billing &amp; documentation</h2>
+          <p class="section-sub">Purpose-built for the day-to-day workflow of dental labs.</p>
+        </div>
+        <div class="features">
+          <div class="feat-card">
+            <div class="feat-icon blue">📒</div>
+            <h3>Doctor Ledger &amp; Billing</h3>
+            <p>A running per-doctor ledger covering both supplies and payments — balances, transaction history, and case details in one place, exportable as a printable PDF statement.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon cyan">🛡️</div>
+            <h3>Warranty Card Generation</h3>
+            <p>Generate warranty cards from 2 templates across 3 material types (Zirconia, PFM, DMLS), front and back, with bulk printing and PDF export at real ID-card size.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon violet">📊</div>
+            <h3>Dashboard Overview</h3>
+            <p>See doctors added this month, your active doctor count, and warranty cards issued this month at a glance the moment you log in.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon amber">🖼️</div>
+            <h3>Custom Lab Branding</h3>
+            <p>Upload your lab's own logo — it appears automatically across your printed ledgers and warranty cards.</p>
+          </div>
+        </div>
+        <p class="trust-line">🔒 Your lab's data stays private and isolated from other labs.</p>
+      </div>
+    </section>
+
+    <section id="who-its-for">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow-sm">Who It's For</span>
+          <h2>Built for dental laboratories</h2>
+          <p class="section-sub">Not individual dental practices — labs that manage multiple doctor accounts and produce prosthetic or tooth work at volume.</p>
+        </div>
+        <ul class="who-list">
+          <li><span class="mark">✓</span> Dental lab owners who need visibility into doctor balances and payments</li>
+          <li><span class="mark">✓</span> Lab administrators handling day-to-day billing and supply tracking</li>
+          <li><span class="mark">✓</span> Labs that need consistent, printable warranty documentation for every case</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow-sm">Got Questions?</span>
+          <h2>Frequently Asked Questions</h2>
+          <p class="section-sub">Everything you need to know about running Dentivo in your lab.</p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" open>
+            <summary>How does Dentivo help with doctor payments?</summary>
+            <div class="faq-body">Dentivo keeps a running ledger for every doctor account, so balances, payments, and case history stay in one place instead of scattered notebooks or spreadsheets.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Can I print warranty cards from Dentivo?</summary>
+            <div class="faq-body">Yes — generate warranty cards for prosthetic and tooth work using configurable templates, with support for bulk printing and PDF export.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Is Dentivo for a single lab or multiple locations?</summary>
+            <div class="faq-body">Dentivo is designed for dental laboratories managing multiple doctor accounts and cases at volume.</div>
+          </details>
+          <details class="faq-item">
+            <summary>How do I get started?</summary>
+            <div class="faq-body">Log in to your Dentivo account if your lab already has one, or contact the Dentivo team to set up access for your lab.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Is my lab's data secure?</summary>
+            <div class="faq-body">Dentivo is served over an encrypted connection, and access to your lab's data is restricted to authorized accounts.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="wrap">
+        <span class="trial-pill">✨ Try Dentivo free for 7 days</span>
+        <h2 style="margin-top: 20px;">Ready to organize your lab's billing?</h2>
+        <p>Log in to your Dentivo account to get started.</p>
+        <a class="btn btn-primary" href="/login">Login to Dentivo</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand">
+            <div class="brand-badge">D</div>
+            <span class="logo">DENTIVO</span>
+          </div>
+          <p>Cloud management software for dental laboratories to handle doctor ledgers, billing, and warranty documentation.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Doctor Ledger &amp; Billing</a></li>
+            <li><a href="#features">Warranty Card Generation</a></li>
+            <li><a href="#features">Supply &amp; Payment Tracking</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>More</h4>
+          <ul>
+            <li><a href="#compare">Why Dentivo</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="/login">Login</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; <span id="year">2026</span> Dentivo. Built for dental laboratories.</div>
+      </div>
+    </div>
+  </footer>
 </body>
 
 </html>

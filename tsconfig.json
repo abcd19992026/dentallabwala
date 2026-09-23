@@ -7,7 +7,7 @@
     "skipLibCheck": true,
 
     /* Vite client types: enables import.meta.env, CSS imports, etc. */
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

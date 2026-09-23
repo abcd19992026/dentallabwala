@@ -127,12 +127,6 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // ─── Root redirect ───────────────────────────────────────
-      {
-        path: '/',
-        element: <Navigate to="/app/dashboard" replace />,
-      },
-
       // ─── 404 fallback ────────────────────────────────────────
       {
         path: '*',

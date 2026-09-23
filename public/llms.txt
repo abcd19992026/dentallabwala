@@ -1,0 +1,25 @@
+# Dentivo
+
+> Dentivo is a SaaS platform built for dental laboratories to manage their day-to-day
+> financial and production operations.
+
+## What it is
+Dentivo helps dental labs track doctor accounts, supplies, and payments in one place,
+and generate printable warranty cards for prosthetic and tooth work delivered to clients.
+
+## Who it's for
+Dental laboratories and lab administrators who need to manage doctor billing relationships
+and produce warranty documentation for prosthetic/dental work.
+
+## Key features
+- Doctor ledger & billing: track balances, payments, and transaction history per doctor
+- Warranty card generation: create printable warranty cards for prosthetic/tooth work
+- Supply and payment tracking across doctor accounts
+- Multi-lab support with role-based access
+
+## Pricing
+Contact the Dentivo team for current plans and pricing.
+
+## Links
+- Homepage: https://dentallabwala.vercel.app/
+- Login: https://dentallabwala.vercel.app/login
