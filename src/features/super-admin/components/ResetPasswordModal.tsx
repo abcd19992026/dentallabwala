@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { X, KeyRound, Loader2, CheckCircle2 } from 'lucide-react'
 import type { DentalLabClient } from '../types/client'
 
@@ -9,6 +9,8 @@ interface ResetPasswordModalProps {
   onReset: (clientId: string, newPassword: string) => Promise<void>
 }
 
+const MIN_PASSWORD_LENGTH = 6
+
 export function ResetPasswordModal({
   isOpen,
   client,
@@ -18,15 +20,28 @@ export function ResetPasswordModal({
   const [newPassword, setNewPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   if (!isOpen || !client) return null
 
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setNewPassword(e.target.value)
+    if (error) setError('')
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!newPassword.trim()) return
+    const trimmed = newPassword.trim()
+
+    if (trimmed.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+      return
+    }
+
+    setError('')
     setIsSubmitting(true)
     try {
-      await onReset(client.id, newPassword)
+      await onReset(client.id, trimmed)
       setIsSuccess(true)
       setTimeout(() => {
         setIsSuccess(false)
@@ -34,7 +49,7 @@ export function ResetPasswordModal({
         onClose()
       }, 1500)
     } catch (err) {
-      console.error('Password reset failed:', err)
+      setError(err instanceof Error ? err.message : 'Password reset failed. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -81,10 +96,14 @@ export function ResetPasswordModal({
                 <input
                   type="text"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   placeholder="Enter new password"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 ${
+                    error ? 'border-red-500/60 focus:ring-red-500' : 'border-slate-700 focus:ring-amber-500'
+                  }`}
                 />
+                <p className="text-[11px] text-slate-500">Minimum {MIN_PASSWORD_LENGTH} characters.</p>
+                {error && <p className="text-xs text-red-400">{error}</p>}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4">

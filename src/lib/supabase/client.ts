@@ -2,8 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-const supabaseServiceRoleKey =
-  (import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string) || supabaseAnonKey
 
 const isConfigured =
   supabaseUrl &&
@@ -29,19 +27,6 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-    },
-  }
-)
-
-// Admin client for Supabase Admin API operations (e.g. auth.admin.createUser)
-// Uses service role key when available, with persistSession disabled to preserve Super Admin session.
-export const supabaseAdmin = createClient(
-  isConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
-  isConfigured ? supabaseServiceRoleKey : 'placeholder_key',
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
     },
   }
 )

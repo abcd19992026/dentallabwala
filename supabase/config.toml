@@ -9,3 +9,9 @@ entrypoint = "./functions/deactivate-client/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/deactivate-client/*.html" ]
+
+[functions.reset-client-password]
+enabled = true
+verify_jwt = false
+import_map = "./functions/reset-client-password/deno.json"
+entrypoint = "./functions/reset-client-password/index.ts"
