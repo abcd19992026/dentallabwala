@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import type { DentalLabClient, CreateClientInput, UpdateClientInput } from '../types/client'
 
 const LOCAL_STORAGE_KEY = 'dlw_super_admin_clients'
@@ -509,22 +509,31 @@ export async function resetClientPassword(clientId: string, newPassword: string)
     return
   }
 
-  // Find user_id from profiles table where lab_id = clientId
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('lab_id', clientId)
-    .single()
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-  if (profileError || !profile?.id) {
-    throw new Error(`Profile not found for client ID ${clientId}`)
+  const { data: { session } } = await supabase.auth.getSession()
+  const accessToken = session?.access_token
+  if (!accessToken) {
+    throw new Error('You must be logged in as Super Admin to reset a client password.')
   }
 
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(profile.id, {
-    password: newPassword,
+  const response = await fetch(`${supabaseUrl}/functions/v1/reset-client-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      apikey: supabaseAnonKey,
+    },
+    body: JSON.stringify({
+      clientId,
+      newPassword,
+    }),
   })
 
-  if (error) {
-    throw new Error(`Password reset failed: ${error.message}`)
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result?.error || 'Failed to reset client password')
   }
 }
