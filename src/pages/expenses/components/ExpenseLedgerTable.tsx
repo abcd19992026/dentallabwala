@@ -71,7 +71,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
       const q = searchQuery.toLowerCase()
       result = result.filter(
         (e) =>
-          e.title.toLowerCase().includes(q) ||
+          (e.title && e.title.toLowerCase().includes(q)) ||
           (e.paid_to && e.paid_to.toLowerCase().includes(q)) ||
           (e.notes && e.notes.toLowerCase().includes(q))
       )

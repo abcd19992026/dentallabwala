@@ -124,10 +124,6 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
       newErrors.date = 'Future dates are not allowed'
     }
 
-    if (!title.trim()) {
-      newErrors.title = 'Expense title is required'
-    }
-
     if (!categoryId) {
       newErrors.categoryId = 'Please select a category'
     }
@@ -146,10 +142,13 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
       return
     }
 
+    const selectedCategory = categories.find((c) => c.id === categoryId)
+    const finalTitle = title.trim() || selectedCategory?.name || 'Expense'
+
     await onSaveExpense(
       {
         expense_date: date,
-        title: title.trim(),
+        title: finalTitle,
         category_id: categoryId,
         payment_mode: paymentMode,
         paid_to: paidTo.trim() ? paidTo.trim() : null,
@@ -256,25 +255,15 @@ export const AddEditExpenseModal: React.FC<AddEditExpenseModalProps> = ({
           {/* Row 2: Title */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-300">
-              Expense Title / Description <span className="text-rose-400">*</span>
+              Expense Title / Description <span className="text-slate-500 font-normal">(Optional)</span>
             </label>
             <input
               type="text"
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                if (errors.title) setErrors((prev) => ({ ...prev, title: '' }))
-              }}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Zirconia HT discs purchase, Electric bill, Staff Salary..."
-              className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                errors.title ? 'border-rose-500/80 bg-rose-500/5' : 'border-slate-700'
-              }`}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
-            {errors.title && (
-              <p className="text-[11px] text-rose-400 flex items-center gap-1 mt-1">
-                <AlertCircle size={12} /> {errors.title}
-              </p>
-            )}
           </div>
 
           {/* Row 3: Category Selection with Inline Add Option */}
