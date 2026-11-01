@@ -14,6 +14,8 @@ import { filterByMonth, sumAmounts, getCategoryBreakdown } from '../utils/calcul
 
 interface SpendByCategoryChartProps {
   selectedMonth: string // YYYY-MM
+  startDate?: string
+  endDate?: string
   expenses: ExpenseEntry[]
   categories: Category[]
 }
@@ -28,15 +30,25 @@ interface ChartItem {
 
 export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
   selectedMonth,
+  startDate,
+  endDate,
   expenses,
   categories,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
-  const currentMonthExpenses = useMemo(
-    () => filterByMonth(expenses, selectedMonth),
-    [expenses, selectedMonth]
-  )
+  const currentMonthExpenses = useMemo(() => {
+    if (startDate && endDate) {
+      return expenses.filter((e) => e.expense_date >= startDate && e.expense_date <= endDate)
+    }
+    if (startDate) {
+      return expenses.filter((e) => e.expense_date >= startDate)
+    }
+    if (endDate) {
+      return expenses.filter((e) => e.expense_date <= endDate)
+    }
+    return filterByMonth(expenses, selectedMonth)
+  }, [expenses, selectedMonth, startDate, endDate])
 
   const totalSpend = useMemo(() => sumAmounts(currentMonthExpenses), [currentMonthExpenses])
 

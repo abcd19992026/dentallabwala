@@ -137,6 +137,11 @@ export function DoctorPrintLayout({
           .printable-doctor-ledger .ledger-bottom {
             page-break-inside: avoid;
           }
+
+          /* Keep footer together as one unit */
+          .printable-doctor-ledger .ledger-footer {
+            page-break-inside: avoid;
+          }
         }
       `}</style>
 
@@ -339,6 +344,11 @@ export function DoctorPrintLayout({
             <span className="font-mono">Rs. {formatCurrency(finalDueAmount)}/-</span>
           </div>
         </div>
+      </div>
+
+      {/* ─── FOOTER MARKETING ─── */}
+      <div className="border-t border-black mt-4 pt-2 text-center text-[11px] font-bold text-black tracking-wide ledger-footer">
+        Powered by Dentivo Software &nbsp;|&nbsp; www.cavoratechnologies.com &nbsp;|&nbsp; Enquiry: +91 9142639282
       </div>
     </div>
   )

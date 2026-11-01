@@ -23,24 +23,30 @@ import { getCategoryColor } from '../utils/categoryColors'
 
 interface ExpenseLedgerTableProps {
   selectedMonth: string // YYYY-MM
+  startDate?: string
+  endDate?: string
   expenses: ExpenseEntry[]
   categories: Category[]
   onEditExpense: (entry: ExpenseEntry) => void
   onDeleteExpense: (entry: ExpenseEntry) => void
   onOpenAddExpense: () => void
   onOpenManageCategories: () => void
+  onClearDateFilter?: () => void
 }
 
 type SortOption = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc'
 
 export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
   selectedMonth,
+  startDate,
+  endDate,
   expenses,
   categories,
   onEditExpense,
   onDeleteExpense,
   onOpenAddExpense,
   onOpenManageCategories,
+  onClearDateFilter,
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all')
@@ -57,10 +63,21 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
     return categories.filter((c) => c.is_active)
   }, [categories])
 
-  // Filter expenses for selected month
+  // Filter expenses for selected month or custom date range
   const monthExpenses = useMemo(() => {
-    return expenses.filter((e) => e.expense_date.startsWith(selectedMonth))
-  }, [expenses, selectedMonth])
+    return expenses.filter((e) => {
+      if (startDate && endDate) {
+        return e.expense_date >= startDate && e.expense_date <= endDate
+      }
+      if (startDate) {
+        return e.expense_date >= startDate
+      }
+      if (endDate) {
+        return e.expense_date <= endDate
+      }
+      return e.expense_date.startsWith(selectedMonth)
+    })
+  }, [expenses, selectedMonth, startDate, endDate])
 
   // Apply search query, category filter, and sorting
   const filteredAndSortedExpenses = useMemo(() => {
@@ -160,6 +177,8 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
     )
   }
 
+  const isCustomDateFiltered = Boolean(startDate || endDate)
+
   return (
     <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5">
       {/* Header & Controls */}
@@ -170,13 +189,30 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
             <Receipt size={20} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-white tracking-tight">
                 Expense Ledger
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                 {filteredAndSortedExpenses.length} {filteredAndSortedExpenses.length === 1 ? 'entry' : 'entries'}
               </span>
+              {isCustomDateFiltered && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <span>
+                    Range: {startDate || 'Start'} → {endDate || 'End'}
+                  </span>
+                  {onClearDateFilter && (
+                    <button
+                      type="button"
+                      onClick={onClearDateFilter}
+                      className="text-blue-300 hover:text-white transition-colors"
+                      title="Clear date filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400">
               Detailed chronological record of all lab payouts and bills
@@ -381,16 +417,17 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                     </div>
                     <p className="text-white font-semibold text-sm">No expenses found</p>
                     <p className="text-slate-400 text-xs mt-1">
-                      {searchQuery || selectedCategoryFilter !== 'all'
-                        ? 'No expenses matched your search or category filter. Try resetting filters.'
+                      {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered
+                        ? 'No expenses matched your search or filters. Try resetting filters.'
                         : 'No expenses logged for this month yet.'}
                     </p>
-                    {searchQuery || selectedCategoryFilter !== 'all' ? (
+                    {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered ? (
                       <button
                         type="button"
                         onClick={() => {
                           setSearchQuery('')
                           setSelectedCategoryFilter('all')
+                          if (onClearDateFilter) onClearDateFilter()
                         }}
                         className="mt-3 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
                       >
@@ -486,8 +523,8 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
           <div className="py-8 text-center text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800 p-6">
             <p className="text-white font-semibold text-sm">No expenses found</p>
             <p className="text-slate-400 text-xs mt-1">
-              {searchQuery || selectedCategoryFilter !== 'all'
-                ? 'Try clearing your search or category filter.'
+              {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered
+                ? 'Try clearing your search or filters.'
                 : 'No expenses logged for this month.'}
             </p>
             <button

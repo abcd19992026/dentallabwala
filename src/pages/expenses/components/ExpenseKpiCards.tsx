@@ -22,6 +22,8 @@ import {
 
 interface ExpenseKpiCardsProps {
   selectedMonth: string // YYYY-MM
+  startDate?: string
+  endDate?: string
   expenses: ExpenseEntry[]
   categories: Category[]
   referenceDate?: Date
@@ -29,15 +31,25 @@ interface ExpenseKpiCardsProps {
 
 export const ExpenseKpiCards: React.FC<ExpenseKpiCardsProps> = ({
   selectedMonth,
+  startDate,
+  endDate,
   expenses,
   categories,
   referenceDate = new Date(),
 }) => {
-  // Filter current selected month expenses
-  const currentMonthExpenses = React.useMemo(
-    () => filterByMonth(expenses, selectedMonth),
-    [expenses, selectedMonth]
-  )
+  // Filter current selected month expenses (or custom date range)
+  const currentMonthExpenses = React.useMemo(() => {
+    if (startDate && endDate) {
+      return expenses.filter((e) => e.expense_date >= startDate && e.expense_date <= endDate)
+    }
+    if (startDate) {
+      return expenses.filter((e) => e.expense_date >= startDate)
+    }
+    if (endDate) {
+      return expenses.filter((e) => e.expense_date <= endDate)
+    }
+    return filterByMonth(expenses, selectedMonth)
+  }, [expenses, selectedMonth, startDate, endDate])
 
   // Current month total
   const currentTotal = React.useMemo(() => sumAmounts(currentMonthExpenses), [currentMonthExpenses])

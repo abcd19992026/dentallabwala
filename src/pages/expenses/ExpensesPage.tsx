@@ -11,6 +11,7 @@ import { ExpenseLedgerTable } from './components/ExpenseLedgerTable'
 import { AddEditExpenseModal } from './components/AddEditExpenseModal'
 import { ManageCategoriesModal } from './components/ManageCategoriesModal'
 import { DeleteExpenseModal } from './components/DeleteExpenseModal'
+import { DayRangeFilter } from './components/DayRangeFilter'
 import {
   formatMonthName,
   getISTReferenceDate,
@@ -32,6 +33,8 @@ export default function ExpensesPage() {
   const defaultMonth = useMemo(() => getISTMonthString(), [])
 
   const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth)
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
 
   const [categories, setCategories] = useState<Category[]>([])
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([])
@@ -82,14 +85,17 @@ export default function ExpensesPage() {
   // Fetch categories (all, active + inactive) and entries for the
   // selected month AND the previous month (needed for the comparison chart)
   const loadData = useCallback(
-    async (month: string) => {
+    async (month: string, customStart?: string, customEnd?: string) => {
       if (!effectiveLabId) return
       setIsLoading(true)
       setLoadError(null)
       try {
         const prevMonth = getPreviousMonth(month)
-        const fromDate = `${prevMonth}-01`
-        const toDate = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`
+        const defaultFrom = `${prevMonth}-01`
+        const defaultTo = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`
+
+        const fromDate = customStart && customStart < defaultFrom ? customStart : defaultFrom
+        const toDate = customEnd && customEnd > defaultTo ? customEnd : defaultTo
 
         const [cats, entries] = await Promise.all([
           expensesService.getCategories(effectiveLabId),
@@ -108,8 +114,8 @@ export default function ExpensesPage() {
   )
 
   useEffect(() => {
-    loadData(selectedMonth)
-  }, [loadData, selectedMonth])
+    loadData(selectedMonth, startDate, endDate)
+  }, [loadData, selectedMonth, startDate, endDate])
 
   // Month navigation handlers
   const handlePrevMonth = () => {
@@ -118,6 +124,8 @@ export default function ExpensesPage() {
     const y = prev.getFullYear()
     const m = String(prev.getMonth() + 1).padStart(2, '0')
     setSelectedMonth(`${y}-${m}`)
+    setStartDate('')
+    setEndDate('')
   }
 
   const handleNextMonth = () => {
@@ -127,6 +135,8 @@ export default function ExpensesPage() {
     const y = next.getFullYear()
     const m = String(next.getMonth() + 1).padStart(2, '0')
     setSelectedMonth(`${y}-${m}`)
+    setStartDate('')
+    setEndDate('')
   }
 
   // Expense CRUD Handlers
@@ -142,7 +152,7 @@ export default function ExpensesPage() {
       }
       setIsAddExpenseOpen(false)
       setEditingExpense(null)
-      await loadData(selectedMonth)
+      await loadData(selectedMonth, startDate, endDate)
     } catch (err) {
       setErrorToast(getFriendlyExpenseError(err))
     } finally {
@@ -157,7 +167,7 @@ export default function ExpensesPage() {
       await expensesService.deleteEntry(deletingExpense.id)
       setToastMessage('Expense deleted')
       setDeletingExpense(null)
-      await loadData(selectedMonth)
+      await loadData(selectedMonth, startDate, endDate)
     } catch (err) {
       setErrorToast(getFriendlyExpenseError(err))
     } finally {
@@ -231,8 +241,23 @@ export default function ExpensesPage() {
           </p>
         </div>
 
-        {/* Right side: Month selector & + Add Expense Button */}
+        {/* Right side: Day Range Filter, Month selector & + Add Expense Button */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Day Range Filter Popover */}
+          <DayRangeFilter
+            selectedMonth={selectedMonth}
+            startDate={startDate}
+            endDate={endDate}
+            onApplyRange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+            onClear={() => {
+              setStartDate('')
+              setEndDate('')
+            }}
+          />
+
           {/* Month Selector Pill */}
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shadow-sm">
             <button
@@ -249,7 +274,11 @@ export default function ExpensesPage() {
               <Calendar size={14} className="text-blue-400 flex-shrink-0" />
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value)
+                  setStartDate('')
+                  setEndDate('')
+                }}
                 disabled={isLoading}
                 className="bg-transparent text-white font-semibold text-xs sm:text-sm focus:outline-none cursor-pointer py-1 disabled:opacity-50"
               >
@@ -302,6 +331,8 @@ export default function ExpensesPage() {
           {/* 2. Four KPI Cards */}
           <ExpenseKpiCards
             selectedMonth={selectedMonth}
+            startDate={startDate}
+            endDate={endDate}
             expenses={expenses}
             categories={categories}
             referenceDate={referenceDate}
@@ -320,6 +351,8 @@ export default function ExpensesPage() {
             <div className="lg:col-span-5 h-full">
               <SpendByCategoryChart
                 selectedMonth={selectedMonth}
+                startDate={startDate}
+                endDate={endDate}
                 expenses={expenses}
                 categories={categories}
               />
@@ -329,6 +362,8 @@ export default function ExpensesPage() {
           {/* 4. Expense Ledger Table */}
           <ExpenseLedgerTable
             selectedMonth={selectedMonth}
+            startDate={startDate}
+            endDate={endDate}
             expenses={expenses}
             categories={categories}
             onEditExpense={(expense) => {
@@ -344,6 +379,10 @@ export default function ExpensesPage() {
             }}
             onOpenManageCategories={() => {
               setIsManageCategoriesOpen(true)
+            }}
+            onClearDateFilter={() => {
+              setStartDate('')
+              setEndDate('')
             }}
           />
         </>
