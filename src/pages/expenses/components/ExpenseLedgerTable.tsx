@@ -13,6 +13,8 @@ import {
   FileText,
   Receipt,
   Plus,
+  ArrowDownLeft,
+  Printer,
 } from 'lucide-react'
 import type { ExpenseEntry, Category, PaymentMode } from '../types'
 import {
@@ -27,14 +29,17 @@ interface ExpenseLedgerTableProps {
   endDate?: string
   expenses: ExpenseEntry[]
   categories: Category[]
+  cashInCategoryId?: string
   onEditExpense: (entry: ExpenseEntry) => void
   onDeleteExpense: (entry: ExpenseEntry) => void
   onOpenAddExpense: () => void
   onOpenManageCategories: () => void
   onClearDateFilter?: () => void
+  onOpenPrint?: () => void
 }
 
 type SortOption = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc'
+type TypeFilter = 'all' | 'expense' | 'cash_in'
 
 export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
   selectedMonth,
@@ -42,14 +47,17 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
   endDate,
   expenses,
   categories,
+  cashInCategoryId,
   onEditExpense,
   onDeleteExpense,
   onOpenAddExpense,
   onOpenManageCategories,
   onClearDateFilter,
+  onOpenPrint,
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [sortOption, setSortOption] = useState<SortOption>('newest')
 
   const categoryMap = useMemo(() => {
@@ -58,10 +66,18 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
     return map
   }, [categories])
 
-  // Active categories for filter chips
-  const activeCategories = useMemo(() => {
-    return categories.filter((c) => c.is_active)
-  }, [categories])
+  // Active categories for filter chips (exclude Cash In so categories filter only expenses)
+  const activeExpenseCategories = useMemo(() => {
+    return categories.filter(
+      (c) => c.is_active && c.id !== cashInCategoryId && c.name.toLowerCase() !== 'cash in'
+    )
+  }, [categories, cashInCategoryId])
+
+  const isCashIn = (entry: ExpenseEntry) => {
+    if (entry.title === 'Cash In' || entry.title?.startsWith('Cash In')) return true
+    if (cashInCategoryId && entry.category_id === cashInCategoryId) return true
+    return categoryMap.get(entry.category_id)?.name.toLowerCase() === 'cash in'
+  }
 
   // Filter expenses for selected month or custom date range
   const monthExpenses = useMemo(() => {
@@ -79,27 +95,36 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
     })
   }, [expenses, selectedMonth, startDate, endDate])
 
-  // Apply search query, category filter, and sorting
+  // Apply type filter, search query, category filter, and sorting
   const filteredAndSortedExpenses = useMemo(() => {
     let result = [...monthExpenses]
 
-    // 1. Search filter (title & paid_to)
+    // 1. Transaction Type filter
+    if (typeFilter === 'expense') {
+      result = result.filter((e) => !isCashIn(e))
+    } else if (typeFilter === 'cash_in') {
+      result = result.filter((e) => isCashIn(e))
+    }
+
+    // 2. Search filter (paid_to, notes, category, title)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(
         (e) =>
-          (e.title && e.title.toLowerCase().includes(q)) ||
           (e.paid_to && e.paid_to.toLowerCase().includes(q)) ||
-          (e.notes && e.notes.toLowerCase().includes(q))
+          (e.notes && e.notes.toLowerCase().includes(q)) ||
+          (categoryMap.get(e.category_id)?.name &&
+            categoryMap.get(e.category_id)!.name.toLowerCase().includes(q)) ||
+          (e.title && e.title.toLowerCase().includes(q))
       )
     }
 
-    // 2. Category filter
+    // 3. Category filter (applies when not viewing Cash In only)
     if (selectedCategoryFilter !== 'all') {
       result = result.filter((e) => e.category_id === selectedCategoryFilter)
     }
 
-    // 3. Sorting
+    // 4. Sorting
     result.sort((a, b) => {
       if (sortOption === 'newest') {
         return b.expense_date.localeCompare(a.expense_date) || b.id.localeCompare(a.id)
@@ -117,7 +142,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
     })
 
     return result
-  }, [monthExpenses, searchQuery, selectedCategoryFilter, sortOption])
+  }, [monthExpenses, typeFilter, searchQuery, selectedCategoryFilter, sortOption, categoryMap])
 
   // Payment mode badge helper
   const renderPaymentModeBadge = (mode: PaymentMode) => {
@@ -156,6 +181,17 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
   // Category badge helper
   const renderCategoryBadge = (categoryId: string) => {
     const cat = categoryMap.get(categoryId)
+    const isCatCashIn = cat?.name.toLowerCase() === 'cash in'
+
+    if (isCatCashIn) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+          <ArrowDownLeft size={12} className="text-emerald-400 stroke-[2.5]" />
+          <span>Cash In</span>
+        </span>
+      )
+    }
+
     const name = cat?.name || 'Uncategorized'
     const color = getCategoryColor(cat)
 
@@ -163,8 +199,8 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
       <span
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
         style={{
-          backgroundColor: `${color}18`, // 10% opacity
-          borderColor: `${color}40`,     // 25% opacity
+          backgroundColor: `${color}18`,
+          borderColor: `${color}40`,
           color: color,
         }}
       >
@@ -191,7 +227,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-white tracking-tight">
-                Expense Ledger
+                Cash & Expense Ledger
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                 {filteredAndSortedExpenses.length} {filteredAndSortedExpenses.length === 1 ? 'entry' : 'entries'}
@@ -215,7 +251,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
               )}
             </div>
             <p className="text-xs text-slate-400">
-              Detailed chronological record of all lab payouts and bills
+              Detailed chronological record of all incoming funds and lab expenditures
             </p>
           </div>
         </div>
@@ -232,7 +268,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search title, paid to, notes..."
+              placeholder="Search source, vendor, notes..."
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
             />
             {searchQuery && (
@@ -264,34 +300,99 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
               />
             </div>
+
+            {/* Print Statement Button */}
+            {onOpenPrint && (
+              <button
+                type="button"
+                onClick={onOpenPrint}
+                className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-all shadow-sm flex items-center justify-center flex-shrink-0"
+                title="Print Statement"
+                aria-label="Print Statement"
+              >
+                <Printer size={16} className="text-blue-400" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Category Filter Chips & Manage Categories link */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1 border-y border-slate-800/80">
-        {/* Scrollable Chips Row */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 sm:pb-0 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+      {/* Tabs: All Records | Expenses (Cash Out) | Cash In (Paisa Aaya) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1 border-t border-slate-800/80">
+        <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800 w-fit">
+          <button
+            type="button"
+            onClick={() => setTypeFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              typeFilter === 'all'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            All Records
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTypeFilter('expense')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              typeFilter === 'expense'
+                ? 'bg-rose-600/20 text-rose-300 border border-rose-500/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+            <span>Expenses (Cash Out)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTypeFilter('cash_in')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              typeFilter === 'cash_in'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Cash In (Paisa Aaya)</span>
+          </button>
+        </div>
+
+        {/* Manage Categories Link */}
+        <button
+          type="button"
+          onClick={onOpenManageCategories}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline flex-shrink-0 self-start sm:self-auto py-1"
+        >
+          <SlidersHorizontal size={13} />
+          <span>Manage Categories</span>
+        </button>
+      </div>
+
+      {/* Category Chips (Only shown when not filtering Cash In only) */}
+      {typeFilter !== 'cash_in' && activeExpenseCategories.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           <button
             type="button"
             onClick={() => setSelectedCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
               selectedCategoryFilter === 'all'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                ? 'bg-blue-600 text-white shadow-md'
                 : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200 hover:bg-slate-800/50'
             }`}
           >
-            All Categories
+            All Expense Categories
           </button>
 
-          {activeCategories.map((cat) => {
+          {activeExpenseCategories.map((cat) => {
             const isSelected = selectedCategoryFilter === cat.id
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategoryFilter(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
                   isSelected
                     ? 'bg-slate-800 text-white border-slate-600 shadow-md'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800/50'
@@ -306,17 +407,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
             )
           })}
         </div>
-
-        {/* Manage Categories Link */}
-        <button
-          type="button"
-          onClick={onOpenManageCategories}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline flex-shrink-0 self-start sm:self-auto py-1"
-        >
-          <SlidersHorizontal size={13} />
-          <span>Manage Categories</span>
-        </button>
-      </div>
+      )}
 
       {/* Desktop / Tablet Table */}
       <div className="hidden md:block overflow-x-auto">
@@ -324,10 +415,10 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-950/40">
               <th className="py-3 px-4 rounded-l-xl">Date</th>
-              <th className="py-3 px-4">Title & Details</th>
+              <th className="py-3 px-4">Paid To / Received From</th>
               <th className="py-3 px-4">Category</th>
               <th className="py-3 px-4">Payment Mode</th>
-              <th className="py-3 px-4">Paid To</th>
+              <th className="py-3 px-4">Notes</th>
               <th className="py-3 px-4 text-right">Amount</th>
               <th className="py-3 px-4 text-center rounded-r-xl w-24">Actions</th>
             </tr>
@@ -335,12 +426,14 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
           <tbody className="divide-y divide-slate-800/60 text-sm">
             {filteredAndSortedExpenses.length > 0 ? (
               filteredAndSortedExpenses.map((expense) => {
+                const entryIsCashIn = isCashIn(expense)
+
                 return (
                   <tr
                     key={expense.id}
                     className="hover:bg-slate-800/30 transition-colors group"
                   >
-                    {/* Date */}
+                    {/* 1. Date */}
                     <td className="py-3.5 px-4 text-slate-300 text-xs font-medium whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <Calendar size={13} className="text-slate-500" />
@@ -348,50 +441,70 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Title & Notes */}
-                    <td className="py-3.5 px-4 min-w-[200px]">
-                      <p className="font-semibold text-white tracking-tight leading-snug">
-                        {expense.title}
-                      </p>
-                      {expense.notes && (
-                        <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-1">
-                          {expense.notes}
+                    {/* 2. Paid To OR Received From */}
+                    <td className="py-3.5 px-4 min-w-[170px] max-w-[230px]">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                            entryIsCashIn ? 'bg-emerald-400' : 'bg-slate-500'
+                          }`}
+                        />
+                        <p
+                          className={`font-semibold tracking-tight leading-snug truncate ${
+                            entryIsCashIn ? 'text-emerald-300' : 'text-white'
+                          }`}
+                          title={expense.paid_to || (entryIsCashIn ? 'Cash In' : '—')}
+                        >
+                          {expense.paid_to || (entryIsCashIn ? 'Cash In' : '—')}
                         </p>
-                      )}
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-normal pl-3">
+                        {entryIsCashIn ? 'Received From' : 'Paid To'}
+                      </span>
                     </td>
 
-                    {/* Category */}
+                    {/* 3. Category */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {renderCategoryBadge(expense.category_id)}
                     </td>
 
-                    {/* Payment Mode */}
+                    {/* 4. Payment Mode */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {renderPaymentModeBadge(expense.payment_mode)}
                     </td>
 
-                    {/* Paid To */}
-                    <td className="py-3.5 px-4 text-slate-300 text-xs whitespace-nowrap max-w-[160px] truncate">
-                      {expense.paid_to ? (
-                        <span title={expense.paid_to}>{expense.paid_to}</span>
+                    {/* 5. Notes */}
+                    <td className="py-3.5 px-4 text-slate-300 text-xs min-w-[160px] max-w-[240px]">
+                      {expense.notes ? (
+                        <p className="line-clamp-2 leading-relaxed text-slate-300" title={expense.notes}>
+                          {expense.notes}
+                        </p>
                       ) : (
                         <span className="text-slate-600">—</span>
                       )}
                     </td>
 
-                    {/* Amount */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap font-bold text-white text-sm">
-                      {formatIndianCurrency(expense.amount)}
+                    {/* 6. Amount (+ Green for Cash In, - Red for Expense) */}
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap text-sm">
+                      {entryIsCashIn ? (
+                        <span className="font-extrabold text-emerald-400">
+                          + {formatIndianCurrency(expense.amount)}
+                        </span>
+                      ) : (
+                        <span className="font-extrabold text-rose-400">
+                          - {formatIndianCurrency(expense.amount)}
+                        </span>
+                      )}
                     </td>
 
-                    {/* Actions */}
+                    {/* 7. Actions */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={() => onEditExpense(expense)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors"
-                          title="Edit expense"
+                          title="Edit transaction"
                         >
                           <Pencil size={15} />
                         </button>
@@ -399,7 +512,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                           type="button"
                           onClick={() => onDeleteExpense(expense)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                          title="Delete expense"
+                          title="Delete transaction"
                         >
                           <Trash2 size={15} />
                         </button>
@@ -415,23 +528,24 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                     <div className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 mb-3">
                       <FileText size={22} />
                     </div>
-                    <p className="text-white font-semibold text-sm">No expenses found</p>
+                    <p className="text-white font-semibold text-sm">No records found</p>
                     <p className="text-slate-400 text-xs mt-1">
-                      {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered
-                        ? 'No expenses matched your search or filters. Try resetting filters.'
-                        : 'No expenses logged for this month yet.'}
+                      {searchQuery || selectedCategoryFilter !== 'all' || typeFilter !== 'all' || isCustomDateFiltered
+                        ? 'No records matched your search or filters. Try resetting filters.'
+                        : 'No transactions recorded for this period yet.'}
                     </p>
-                    {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered ? (
+                    {searchQuery || selectedCategoryFilter !== 'all' || typeFilter !== 'all' || isCustomDateFiltered ? (
                       <button
                         type="button"
                         onClick={() => {
                           setSearchQuery('')
                           setSelectedCategoryFilter('all')
+                          setTypeFilter('all')
                           if (onClearDateFilter) onClearDateFilter()
                         }}
                         className="mt-3 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
                       >
-                        Reset filters
+                        Reset all filters
                       </button>
                     ) : (
                       <button
@@ -440,7 +554,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                         className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors shadow-md shadow-blue-600/30"
                       >
                         <Plus size={14} />
-                        <span>Add First Expense</span>
+                        <span>Add First Record</span>
                       </button>
                     )}
                   </div>
@@ -455,23 +569,47 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
       <div className="block md:hidden space-y-3">
         {filteredAndSortedExpenses.length > 0 ? (
           filteredAndSortedExpenses.map((expense) => {
+            const entryIsCashIn = isCashIn(expense)
+
             return (
               <div
                 key={expense.id}
                 className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3"
               >
-                {/* Top: Title, Date, Amount */}
+                {/* Top: Source/PaidTo, Date, Amount */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="font-semibold text-white text-sm tracking-tight leading-snug">
-                      {expense.title}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-slate-400 text-xs mt-1">
-                      <Calendar size={12} className="text-slate-500" />
-                      <span>{formatDisplayDate(expense.expense_date)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          entryIsCashIn ? 'bg-emerald-400' : 'bg-slate-500'
+                        }`}
+                      />
+                      <h3
+                        className={`font-semibold text-sm tracking-tight leading-snug ${
+                          entryIsCashIn ? 'text-emerald-300' : 'text-white'
+                        }`}
+                      >
+                        {expense.paid_to || (entryIsCashIn ? 'Cash In' : 'Expense')}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400 text-xs mt-1">
+                      <div className="flex items-center gap-1">
+                        <Calendar size={12} className="text-slate-500" />
+                        <span>{formatDisplayDate(expense.expense_date)}</span>
+                      </div>
+                      <span>•</span>
+                      <span className="text-[11px] text-slate-500">
+                        {entryIsCashIn ? 'Received From' : 'Paid To'}
+                      </span>
                     </div>
                   </div>
-                  <span className="font-bold text-base text-white whitespace-nowrap">
+                  <span
+                    className={`font-extrabold text-base whitespace-nowrap ${
+                      entryIsCashIn ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {entryIsCashIn ? '+ ' : '- '}
                     {formatIndianCurrency(expense.amount)}
                   </span>
                 </div>
@@ -489,12 +627,6 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
                     {renderCategoryBadge(expense.category_id)}
                     {renderPaymentModeBadge(expense.payment_mode)}
                   </div>
-
-                  {expense.paid_to && (
-                    <span className="text-slate-400 text-xs truncate max-w-[160px]">
-                      Paid to: <span className="text-slate-200">{expense.paid_to}</span>
-                    </span>
-                  )}
                 </div>
 
                 {/* Actions */}
@@ -521,11 +653,11 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
           })
         ) : (
           <div className="py-8 text-center text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800 p-6">
-            <p className="text-white font-semibold text-sm">No expenses found</p>
+            <p className="text-white font-semibold text-sm">No records found</p>
             <p className="text-slate-400 text-xs mt-1">
-              {searchQuery || selectedCategoryFilter !== 'all' || isCustomDateFiltered
+              {searchQuery || selectedCategoryFilter !== 'all' || typeFilter !== 'all' || isCustomDateFiltered
                 ? 'Try clearing your search or filters.'
-                : 'No expenses logged for this month.'}
+                : 'No transactions recorded for this period.'}
             </p>
             <button
               type="button"
@@ -533,7 +665,7 @@ export const ExpenseLedgerTable: React.FC<ExpenseLedgerTableProps> = ({
               className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30"
             >
               <Plus size={14} />
-              <span>Add Expense</span>
+              <span>Add Record</span>
             </button>
           </div>
         )}

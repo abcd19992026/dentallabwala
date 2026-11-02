@@ -64,7 +64,7 @@ export const expensesService = {
       .insert({
         lab_id: labId,
         expense_date: entry.expense_date,
-        title: entry.title,
+        title: entry.title?.trim() || 'Expense',
         category_id: entry.category_id,
         payment_mode: entry.payment_mode,
         paid_to: entry.paid_to?.trim() || null,
@@ -79,11 +79,16 @@ export const expensesService = {
   },
 
   async updateEntry(entryId: string, entry: ExpenseFormInput): Promise<ExpenseEntry> {
+    const isCashIn = entry.transaction_type === 'cash_in'
+    const fallbackTitle = isCashIn
+      ? (entry.paid_to?.trim() ? ('Cash In: ' + entry.paid_to.trim()) : 'Cash In')
+      : (entry.paid_to?.trim() || 'Expense')
+
     const { data, error } = await supabase
       .from('expense_entries')
       .update({
         expense_date: entry.expense_date,
-        title: entry.title,
+        title: fallbackTitle,
         category_id: entry.category_id,
         payment_mode: entry.payment_mode,
         paid_to: entry.paid_to?.trim() || null,
@@ -136,6 +141,21 @@ export const expensesService = {
 
     if (error) throw error
     return data as Category
+  },
+
+  /** Ensures a "Cash In" category exists for tracking funds received. */
+  async ensureCashInCategory(labId: string, currentCategories: Category[]): Promise<Category> {
+    const existing = currentCategories.find((c) => c.name.toLowerCase() === 'cash in')
+    if (existing) return existing
+
+    try {
+      return await this.createCategory(labId, 'Cash In')
+    } catch {
+      const refreshed = await this.getCategories(labId)
+      const found = refreshed.find((c) => c.name.toLowerCase() === 'cash in')
+      if (found) return found
+      throw new Error('Could not initialize Cash In category')
+    }
   },
 }
 

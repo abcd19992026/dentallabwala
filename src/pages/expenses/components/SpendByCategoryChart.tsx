@@ -18,6 +18,7 @@ interface SpendByCategoryChartProps {
   endDate?: string
   expenses: ExpenseEntry[]
   categories: Category[]
+  cashInCategoryId?: string
 }
 
 interface ChartItem {
@@ -34,21 +35,27 @@ export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
   endDate,
   expenses,
   categories,
+  cashInCategoryId,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
   const currentMonthExpenses = useMemo(() => {
-    if (startDate && endDate) {
-      return expenses.filter((e) => e.expense_date >= startDate && e.expense_date <= endDate)
-    }
-    if (startDate) {
-      return expenses.filter((e) => e.expense_date >= startDate)
-    }
-    if (endDate) {
-      return expenses.filter((e) => e.expense_date <= endDate)
-    }
-    return filterByMonth(expenses, selectedMonth)
-  }, [expenses, selectedMonth, startDate, endDate])
+    const dateFiltered = (startDate || endDate)
+      ? expenses.filter((e) => {
+          if (startDate && e.expense_date < startDate) return false
+          if (endDate && e.expense_date > endDate) return false
+          return true
+        })
+      : filterByMonth(expenses, selectedMonth)
+
+    // Exclude Cash In category so pie chart strictly tracks expense distributions
+    return dateFiltered.filter((e) => {
+      if (e.title === 'Cash In' || e.title?.startsWith('Cash In')) return false
+      if (cashInCategoryId && e.category_id === cashInCategoryId) return false
+      const cat = categories.find((c) => c.id === e.category_id)
+      return cat?.name.toLowerCase() !== 'cash in'
+    })
+  }, [expenses, selectedMonth, startDate, endDate, cashInCategoryId, categories])
 
   const totalSpend = useMemo(() => sumAmounts(currentMonthExpenses), [currentMonthExpenses])
 
@@ -79,7 +86,7 @@ export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
             {formatIndianCurrency(data.amount)}
           </p>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            {data.percentage.toFixed(1)}% of month total
+            {data.percentage.toFixed(1)}% of total expenses
           </p>
         </div>
       )
@@ -101,7 +108,9 @@ export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
                 Spend by Category
               </h3>
               <p className="text-xs text-slate-400">
-                Categorical expense distribution
+                {startDate || endDate
+                  ? `Filtered: ${startDate || 'Start'} → ${endDate || 'End'}`
+                  : 'Categorical expense distribution'}
               </p>
             </div>
           </div>
@@ -152,7 +161,7 @@ export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
             {/* Total In Center */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Total Spend
+                Total Expenses
               </span>
               <span className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-tight">
                 {formatIndianCurrency(totalSpend)}
@@ -199,7 +208,9 @@ export const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-dashed border-slate-800 flex items-center justify-center text-slate-500 mb-3">
             <Info size={20} />
           </div>
-          <p className="text-slate-400 font-medium text-sm">No expenses in this month</p>
+          <p className="text-slate-400 font-medium text-sm">
+            {startDate || endDate ? 'No expenses found in this date range' : 'No expenses in this month'}
+          </p>
           <p className="text-slate-500 text-xs mt-1">Add expenses to see category distribution</p>
         </div>
       )}

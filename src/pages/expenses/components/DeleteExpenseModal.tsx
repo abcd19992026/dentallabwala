@@ -57,7 +57,7 @@ export const DeleteExpenseModal: React.FC<DeleteExpenseModalProps> = ({
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <span className="font-semibold text-white text-sm">
-                {expense.title}
+                {expense.paid_to ? `Paid to: ${expense.paid_to}` : expense.title}
               </span>
               <span className="font-bold text-rose-400 text-sm whitespace-nowrap">
                 {formatIndianCurrency(expense.amount)}
@@ -65,7 +65,7 @@ export const DeleteExpenseModal: React.FC<DeleteExpenseModalProps> = ({
             </div>
             <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800/80">
               <span>Date: {formatDisplayDate(expense.expense_date)}</span>
-              {expense.paid_to && <span>Paid to: {expense.paid_to}</span>}
+              {expense.notes && <span className="truncate max-w-[180px]">{expense.notes}</span>}
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ export const DeleteExpenseModal: React.FC<DeleteExpenseModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs sm:text-sm font-semibold transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -84,10 +84,10 @@ export const DeleteExpenseModal: React.FC<DeleteExpenseModalProps> = ({
             type="button"
             onClick={onConfirmDelete}
             disabled={isDeleting}
-            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-rose-600/30 transition-all disabled:opacity-50"
           >
-            <Trash2 size={14} />
-            <span>{isDeleting ? 'Deleting…' : 'Delete Record'}</span>
+            <Trash2 size={16} />
+            <span>{isDeleting ? 'Deleting…' : 'Delete Entry'}</span>
           </button>
         </div>
       </div>

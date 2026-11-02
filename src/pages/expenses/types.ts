@@ -5,6 +5,8 @@
 
 export type PaymentMode = 'cash' | 'upi' | 'bank_transfer'
 
+export type TransactionType = 'cash_out' | 'cash_in'
+
 export interface Category {
   id: string
   lab_id: string
@@ -31,10 +33,11 @@ export interface ExpenseEntry {
 
 export interface ExpenseFormInput {
   expense_date: string
-  title: string
+  title?: string
   category_id: string
   payment_mode: PaymentMode
   paid_to?: string | null
   amount: number
   notes?: string | null
+  transaction_type?: TransactionType
 }

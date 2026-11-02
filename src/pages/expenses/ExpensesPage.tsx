@@ -1,5 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Plus, Calendar, ChevronLeft, ChevronRight, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react'
+import {
+  Plus,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Sparkles,
+  AlertCircle,
+  Printer,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
 import { expensesService, sortCategories } from './services/expenses.service'
@@ -11,7 +20,9 @@ import { ExpenseLedgerTable } from './components/ExpenseLedgerTable'
 import { AddEditExpenseModal } from './components/AddEditExpenseModal'
 import { ManageCategoriesModal } from './components/ManageCategoriesModal'
 import { DeleteExpenseModal } from './components/DeleteExpenseModal'
+import { ExpensePrintModal } from './components/ExpensePrintModal'
 import { DayRangeFilter } from './components/DayRangeFilter'
+import { doctorLedgerService } from '@/features/doctor-ledger/services/doctorLedger.service'
 import {
   formatMonthName,
   getISTReferenceDate,
@@ -37,6 +48,7 @@ export default function ExpensesPage() {
   const [endDate, setEndDate] = useState<string>('')
 
   const [categories, setCategories] = useState<Category[]>([])
+  const [cashInCategoryId, setCashInCategoryId] = useState<string>('')
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -64,6 +76,60 @@ export default function ExpensesPage() {
   const [deletingExpense, setDeletingExpense] = useState<ExpenseEntry | null>(null)
   const [isSavingExpense, setIsSavingExpense] = useState(false)
   const [isDeletingExpense, setIsDeletingExpense] = useState(false)
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
+
+  // Lab details for print statement (same source as Doctor Ledger)
+  const [labDetails, setLabDetails] = useState<{
+    lab_name: string
+    address: string
+    mobile: string
+    whatsapp_number: string
+    logoUrl: string
+  }>({
+    lab_name: '',
+    address: '',
+    mobile: '',
+    whatsapp_number: '',
+    logoUrl: '',
+  })
+
+  useEffect(() => {
+    async function loadLabInfo() {
+      if (!effectiveLabId) return
+      try {
+        const info = await doctorLedgerService.getLabInfo(effectiveLabId)
+        if (info && info.lab_name) {
+          setLabDetails({
+            lab_name: info.lab_name,
+            address: info.address || '',
+            mobile: info.mobile || '',
+            whatsapp_number: info.whatsapp_number || '',
+            logoUrl: info.logoUrl || '',
+          })
+        } else if (tenant?.name) {
+          setLabDetails({
+            lab_name: tenant.name,
+            address: '',
+            mobile: '',
+            whatsapp_number: '',
+            logoUrl: '',
+          })
+        }
+      } catch (err) {
+        console.warn('Could not load lab info for expense print:', err)
+        if (tenant?.name) {
+          setLabDetails({
+            lab_name: tenant.name,
+            address: '',
+            mobile: '',
+            whatsapp_number: '',
+            logoUrl: '',
+          })
+        }
+      }
+    }
+    loadLabInfo()
+  }, [effectiveLabId, tenant])
 
   const currentMonthKey = useMemo(() => monthKeyFromDate(referenceDate), [referenceDate])
 
@@ -82,8 +148,7 @@ export default function ExpensesPage() {
 
   const isAtCurrentMonth = selectedMonth >= currentMonthKey
 
-  // Fetch categories (all, active + inactive) and entries for the
-  // selected month AND the previous month (needed for the comparison chart)
+  // Fetch categories & entries
   const loadData = useCallback(
     async (month: string, customStart?: string, customEnd?: string) => {
       if (!effectiveLabId) return
@@ -101,6 +166,21 @@ export default function ExpensesPage() {
           expensesService.getCategories(effectiveLabId),
           expensesService.getEntries(effectiveLabId, fromDate, toDate),
         ])
+
+        // Ensure "Cash In" category exists for tracking funds received
+        let cashInCat = cats.find((c) => c.name.toLowerCase() === 'cash in')
+        if (!cashInCat && effectiveLabId) {
+          try {
+            cashInCat = await expensesService.createCategory(effectiveLabId, 'Cash In')
+            cats.push(cashInCat)
+          } catch (e) {
+            console.warn('Could not auto-create Cash In category:', e)
+          }
+        }
+        if (cashInCat) {
+          setCashInCategoryId(cashInCat.id)
+        }
+
         setCategories(cats)
         setExpenses(entries)
       } catch (err) {
@@ -145,10 +225,18 @@ export default function ExpensesPage() {
     try {
       if (existingId) {
         await expensesService.updateEntry(existingId, formData)
-        setToastMessage('Expense record updated successfully')
+        setToastMessage(
+          formData.transaction_type === 'cash_in'
+            ? 'Cash In record updated successfully'
+            : 'Expense record updated successfully'
+        )
       } else {
         await expensesService.createEntry(effectiveLabId, formData)
-        setToastMessage('New expense logged successfully')
+        setToastMessage(
+          formData.transaction_type === 'cash_in'
+            ? 'Cash In recorded successfully'
+            : 'New expense logged successfully'
+        )
       }
       setIsAddExpenseOpen(false)
       setEditingExpense(null)
@@ -165,7 +253,7 @@ export default function ExpensesPage() {
     setIsDeletingExpense(true)
     try {
       await expensesService.deleteEntry(deletingExpense.id)
-      setToastMessage('Expense deleted')
+      setToastMessage('Record deleted')
       setDeletingExpense(null)
       await loadData(selectedMonth, startDate, endDate)
     } catch (err) {
@@ -183,7 +271,6 @@ export default function ExpensesPage() {
       setToastMessage(`Category "${created.name}" added`)
       return created
     } catch (err) {
-      // Thrown as a friendly Error so the calling form can show it inline.
       throw new Error(getFriendlyExpenseError(err))
     }
   }
@@ -237,11 +324,11 @@ export default function ExpensesPage() {
             </span>
           </div>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            Track and manage your lab expenses
+            Track and manage your lab cash flow & expenses
           </p>
         </div>
 
-        {/* Right side: Day Range Filter, Month selector & + Add Expense Button */}
+        {/* Right side: Day Filter, Month selector & + Add Transaction Button */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Day Range Filter Popover */}
           <DayRangeFilter
@@ -301,7 +388,19 @@ export default function ExpensesPage() {
             </button>
           </div>
 
-          {/* Primary + Add Expense Button */}
+          {/* Print Statement Button */}
+          <button
+            type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            disabled={!effectiveLabId || isLoading}
+            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center flex-shrink-0"
+            title="Print Statement"
+            aria-label="Print Statement"
+          >
+            <Printer size={16} className="text-blue-400" />
+          </button>
+
+          {/* Primary + Add Transaction Button */}
           <button
             type="button"
             onClick={() => {
@@ -312,7 +411,7 @@ export default function ExpensesPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus size={16} className="stroke-[2.5]" />
-            <span>Add Expense</span>
+            <span>Add Transaction</span>
           </button>
         </div>
       </div>
@@ -335,10 +434,11 @@ export default function ExpensesPage() {
             endDate={endDate}
             expenses={expenses}
             categories={categories}
+            cashInCategoryId={cashInCategoryId}
             referenceDate={referenceDate}
           />
 
-          {/* 3. Two Charts Side by Side (Stack vertically on mobile) */}
+          {/* 3. Two Charts Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-7 h-full">
               <ComparisonChart
@@ -355,17 +455,19 @@ export default function ExpensesPage() {
                 endDate={endDate}
                 expenses={expenses}
                 categories={categories}
+                cashInCategoryId={cashInCategoryId}
               />
             </div>
           </div>
 
-          {/* 4. Expense Ledger Table */}
+          {/* 4. Expense & Cash Ledger Table */}
           <ExpenseLedgerTable
             selectedMonth={selectedMonth}
             startDate={startDate}
             endDate={endDate}
             expenses={expenses}
             categories={categories}
+            cashInCategoryId={cashInCategoryId}
             onEditExpense={(expense) => {
               setEditingExpense(expense)
               setIsAddExpenseOpen(true)
@@ -384,11 +486,12 @@ export default function ExpensesPage() {
               setStartDate('')
               setEndDate('')
             }}
+            onOpenPrint={() => setIsPrintModalOpen(true)}
           />
         </>
       )}
 
-      {/* 5. Add / Edit Expense Modal */}
+      {/* 5. Add / Edit Transaction Modal */}
       <AddEditExpenseModal
         isOpen={isAddExpenseOpen}
         onClose={() => {
@@ -400,6 +503,7 @@ export default function ExpensesPage() {
         onAddNewCategory={handleAddNewCategory}
         editingExpense={editingExpense}
         categories={categories}
+        cashInCategoryId={cashInCategoryId}
         isSaving={isSavingExpense}
       />
 
@@ -407,7 +511,7 @@ export default function ExpensesPage() {
       <ManageCategoriesModal
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
-        categories={categories}
+        categories={categories.filter((c) => c.name.toLowerCase() !== 'cash in')}
         onAddCategory={async (name) => {
           await handleAddNewCategory(name)
         }}
@@ -425,6 +529,17 @@ export default function ExpensesPage() {
         onConfirmDelete={handleDeleteExpenseConfirm}
         expense={deletingExpense}
         isDeleting={isDeletingExpense}
+      />
+
+      {/* 8. Print Statement Modal */}
+      <ExpensePrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        expenses={expenses}
+        categories={categories}
+        cashInCategoryId={cashInCategoryId}
+        selectedMonth={selectedMonth}
+        labDetails={labDetails}
       />
     </div>
   )
