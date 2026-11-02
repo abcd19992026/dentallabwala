@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { X, Printer } from 'lucide-react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { X, Printer, Search, ChevronDown, Check } from 'lucide-react'
 import type { ExpenseEntry, Category } from '../types'
 import { ExpensePrintLayout } from './ExpensePrintLayout'
 import { daysInMonth } from '../utils/calculations'
 import { formatMonthName } from '../utils/currencyFormatter'
+import { getCategoryColor } from '../utils/categoryColors'
 
 const MONTHS_SHORT = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -48,6 +49,12 @@ export const ExpensePrintModal: React.FC<ExpensePrintModalProps> = ({
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
   const [isPrinting, setIsPrinting] = useState(false)
 
+  // Category Searchable Dropdown State
+  const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false)
+  const [catSearchQuery, setCatSearchQuery] = useState('')
+  const catDropdownRef = useRef<HTMLDivElement>(null)
+  const catSearchInputRef = useRef<HTMLInputElement>(null)
+
   // Reset all filters when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -56,8 +63,36 @@ export const ExpensePrintModal: React.FC<ExpensePrintModalProps> = ({
       setFromDay(1)
       setToDay(totalDays)
       setSortOrder('newest')
+      setIsCatDropdownOpen(false)
+      setCatSearchQuery('')
     }
   }, [isOpen, totalDays])
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isCatDropdownOpen) {
+      setTimeout(() => {
+        catSearchInputRef.current?.focus()
+      }, 50)
+    } else {
+      setCatSearchQuery('')
+    }
+  }, [isCatDropdownOpen])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target as Node)) {
+        setIsCatDropdownOpen(false)
+      }
+    }
+    if (isCatDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [isCatDropdownOpen])
 
   // Category map
   const catMap = useMemo(() => {
@@ -77,6 +112,13 @@ export const ExpensePrintModal: React.FC<ExpensePrintModalProps> = ({
       ),
     [categories, cashInCategoryId]
   )
+
+  // Filtered categories for the search box
+  const filteredSearchCats = useMemo(() => {
+    if (!catSearchQuery.trim()) return activeCats
+    const q = catSearchQuery.toLowerCase().trim()
+    return activeCats.filter((c) => c.name.toLowerCase().includes(q))
+  }, [activeCats, catSearchQuery])
 
   // Computed date strings for filtering
   const safeFrom = Math.min(fromDay, toDay)
@@ -253,35 +295,144 @@ export const ExpensePrintModal: React.FC<ExpensePrintModalProps> = ({
           <div className="w-72 flex-shrink-0 border-r border-slate-800 flex flex-col bg-slate-950">
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
 
-              {/* Category Filter */}
+              {/* Category Searchable Dropdown */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
                   Category
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="relative" ref={catDropdownRef}>
+                  {/* Trigger Button */}
                   <button
-                    onClick={() => setSelCatId('all')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
-                      selCatId === 'all'
-                        ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
-                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                    type="button"
+                    onClick={() => setIsCatDropdownOpen((prev) => !prev)}
+                    className={`w-full px-3 py-2 rounded-xl bg-slate-900 border text-xs flex items-center justify-between text-left transition-all ${
+                      isCatDropdownOpen
+                        ? 'border-blue-500 ring-2 ring-blue-500/20'
+                        : 'border-slate-800 hover:border-slate-700'
                     }`}
                   >
-                    All
-                  </button>
-                  {activeCats.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelCatId(cat.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
-                        selCatId === cat.id
-                          ? 'bg-slate-700 border-slate-500 text-white shadow-sm'
-                          : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                    <div className="flex items-center gap-2 truncate">
+                      {selCatId === 'all' ? (
+                        <>
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                          <span className="text-white font-medium truncate">All Categories</span>
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: getCategoryColor(catMap.get(selCatId)) }}
+                          />
+                          <span className="text-white font-medium truncate">
+                            {catMap.get(selCatId)?.name || 'Select Category'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <ChevronDown
+                      size={14}
+                      className={`text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+                        isCatDropdownOpen ? 'rotate-180 text-blue-400' : ''
                       }`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
+                    />
+                  </button>
+
+                  {/* Dropdown Menu with Search Box */}
+                  {isCatDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 z-40 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                      {/* Search Input Box */}
+                      <div className="p-2 border-b border-slate-800 bg-slate-950/70">
+                        <div className="relative">
+                          <Search
+                            size={13}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                          />
+                          <input
+                            ref={catSearchInputRef}
+                            type="text"
+                            value={catSearchQuery}
+                            onChange={(e) => setCatSearchQuery(e.target.value)}
+                            placeholder="Search category..."
+                            className="w-full pl-8 pr-7 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          />
+                          {catSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setCatSearchQuery('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Category Options List */}
+                      <div className="max-h-48 overflow-y-auto p-1 space-y-0.5 scrollbar-thin scrollbar-thumb-slate-700">
+                        {/* "All Categories" option */}
+                        {(!catSearchQuery.trim() || 'all categories'.includes(catSearchQuery.toLowerCase())) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelCatId('all')
+                              setIsCatDropdownOpen(false)
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${
+                              selCatId === 'all'
+                                ? 'bg-blue-600/20 text-blue-300 font-semibold'
+                                : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                              <span className="truncate">All Categories</span>
+                            </div>
+                            {selCatId === 'all' && (
+                              <Check size={14} className="text-blue-400 flex-shrink-0" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Filtered category items */}
+                        {filteredSearchCats.length > 0 ? (
+                          filteredSearchCats.map((cat) => {
+                            const isSelected = cat.id === selCatId
+                            const color = getCategoryColor(cat)
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelCatId(cat.id)
+                                  setIsCatDropdownOpen(false)
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${
+                                  isSelected
+                                    ? 'bg-blue-600/20 text-blue-300 font-semibold'
+                                    : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                  <span className="truncate">{cat.name}</span>
+                                </div>
+                                {isSelected && (
+                                  <Check size={14} className="text-blue-400 flex-shrink-0" />
+                                )}
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="p-3 text-center text-xs text-slate-400">
+                            No category matches &quot;{catSearchQuery}&quot;
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
